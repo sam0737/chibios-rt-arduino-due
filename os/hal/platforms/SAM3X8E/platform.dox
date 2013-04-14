@@ -1,0 +1,50 @@
+/*
+    ChibiOS/RT - Copyright (C) 2013 Sam Wong
+
+	This file is part of Arduino Due patch for ChibiOS/RT.
+
+    ChibiOS/RT is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 3 of the License, or
+    (at your option) any later version.
+
+    ChibiOS/RT is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+                                      ---
+
+    A special exception to the GPL can be applied should you wish to distribute
+    a combined work that includes ChibiOS/RT, without being obliged to provide
+    the source code for any proprietary components. See the file exception.txt
+    for full details of how and when the exception can be applied.
+*/
+
+/**
+ * @defgroup SAM3X8E_DRIVERS SAM3X8E Drivers
+ * @details This section describes all the supported drivers on the SAM3X8E
+ *          platform and the implementation details of the single drivers.
+ *
+ * @ingroup platforms
+ */
+
+/**
+ * @defgroup SAM3X8E_HAL SAM3X8E Initialization Support
+ * @details The SAM3X8E HAL support is responsible for system initialization.
+ *
+ * @section sam3x8e_hal_1 Supported HW resources
+ * - PIO.
+ * .
+ * @section sam3x8e_hal_2 STM32F1xx HAL driver implementation features
+ * - PLLs startup and stabilization.
+ * - Clock tree initialization.
+ * - Clock source selection.
+ * - Flash wait states initialization based on the selected clock options.
+ * - SYSTICK initialization based on current clock and kernel required rate.
+ * .
+ * @ingroup STM32F1xx_DRIVERS
+ */
