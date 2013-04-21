@@ -25,7 +25,7 @@
 */
 
 /**
- * @file    templates/hal_lld.c
+ * @file    SAM3X8E/hal_lld.c
  * @brief   HAL Driver subsystem low level driver source template.
  *
  * @addtogroup HAL
@@ -41,16 +41,16 @@
 #ifndef SYS_BOARD_OSCOUNT
 #define SYS_BOARD_OSCOUNT   (CKGR_MOR_MOSCXTST(0x8))
 #define SYS_BOARD_PLLAR     (CKGR_PLLAR_ONE \
-							| CKGR_PLLAR_MULA(0xdUL) \
-							| CKGR_PLLAR_PLLACOUNT(0x3fUL) \
-							| CKGR_PLLAR_DIVA(0x1UL))
+                            | CKGR_PLLAR_MULA(0xdUL) \
+                            | CKGR_PLLAR_PLLACOUNT(0x3fUL) \
+                            | CKGR_PLLAR_DIVA(0x1UL))
 #define SYS_BOARD_MCKR      (PMC_MCKR_PRES_CLK_2 | PMC_MCKR_CSS_PLLA_CLK)
 #endif
 
 /* Clock Definitions */
-#define SYS_UTMIPLL     		(480000000UL)	/* UTMI PLL frequency */
+#define SYS_UTMIPLL             (480000000UL)	/* UTMI PLL frequency */
 
-#define SYS_CKGR_MOR_KEY_VALUE	CKGR_MOR_KEY(0x37) /* Key to unlock MOR register */
+#define SYS_CKGR_MOR_KEY_VALUE  CKGR_MOR_KEY(0x37) /* Key to unlock MOR register */
 
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
@@ -74,7 +74,7 @@ uint32_t SystemCoreClock = CHIP_FREQ_MAINCK_RC_4MHZ;
  * @\brief Setup the microcontroller system. (CMSIS Convention)
  * Initialize the System and update the SystemFrequency variable.
  */
-void SystemInit(void)
+static void SystemInit(void)
 {
 	/* Set FWS according to SYS_BOARD_MCKR configuration */
 	EFC0->EEFC_FMR = EEFC_FMR_FWS(4);
@@ -97,8 +97,8 @@ void SystemInit(void)
  	PMC->PMC_MCKR = (PMC->PMC_MCKR & ~(uint32_t)PMC_MCKR_CSS_Msk) |
 		                     PMC_MCKR_CSS_MAIN_CLK;
 	while (!(PMC->PMC_SR & PMC_SR_MCKRDY)) {
-	}
 
+	}
 	/* Initialize PLLA */
 	PMC->CKGR_PLLAR = SYS_BOARD_PLLAR;
 	while (!(PMC->PMC_SR & PMC_SR_LOCKA)) {

@@ -1,7 +1,7 @@
 /*
     ChibiOS/RT - Copyright (C) 2013 Sam Wong
 
-    This file is part of Arduino Due patch for ChibiOS/RT.
+	This file is part of Arduino Due patch for ChibiOS/RT.
 
     ChibiOS/RT is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,29 +22,39 @@
     a combined work that includes ChibiOS/RT, without being obliged to provide
     the source code for any proprietary components. See the file exception.txt
     for full details of how and when the exception can be applied.
-*/
-
-#ifndef _BOARD_H_
-#define _BOARD_H_
-
-/*
- * Setup for the Arduino Due
  */
 
-/*
- * Board identifier.
+/**
+ * @file    SAM3XA/peripheral_config.c
+ * @brief   Provides utilities for configuring PIO multiplexor for peripheral functions
+ *
+ * @addtogroup SAM3XA_HAL_PERIPHERAL_CONFIG
+ * @{
  */
-#define BOARD_ARDUINO_DUE
-#define BOARD_NAME              "Arduino Due"
 
-#if !defined(_FROM_ASM_)
-#ifdef __cplusplus
-extern "C" {
-#endif
-  void boardInit(void);
-#ifdef __cplusplus
+#include "sam3xa_min.h"
+#include "peripheral_config.h"
+
+/**
+ * @brief   Disable pin for PIO and apply the settings described in the config
+ */
+void peripheral_pin_apply(const PeripheralPinConfig *config)
+{
+  if (config->port == 0)
+    return;
+
+  config->port->PIO_ABSR =
+      (config->port->PIO_ABSR & ~(1 << config->pin)) | // Mask out
+      (config->mode << config->pin);                 // Apply new settings
+  config->port->PIO_PDR = 1 << config->pin;
 }
-#endif
-#endif /* _FROM_ASM_ */
 
-#endif /* _BOARD_H_ */
+/**
+ * @brief   Enable pin for PIO.
+ */
+void peripheral_pin_reset(const PeripheralPinConfig *config)
+{
+  config->port->PIO_PER = 1 << config->pin;
+}
+
+/** @} */

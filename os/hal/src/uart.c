@@ -137,11 +137,11 @@ void uartStop(UARTDriver *uartp) {
  *
  * @api
  */
-void uartStartSend(UARTDriver *uartp, size_t n, const void *txbuf) {
 
+void uartStartSend(UARTDriver *uartp, size_t n, const void *txbuf) {
   chDbgCheck((uartp != NULL) && (n > 0) && (txbuf != NULL),
              "uartStartSend");
-             
+
   chSysLock();
   chDbgAssert(uartp->state == UART_READY,
               "uartStartSend(), #1", "is active");

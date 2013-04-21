@@ -125,11 +125,7 @@ extern void VectorD0(void);
 extern void VectorD4(void);
 extern void VectorD8(void);
 extern void VectorDC(void);
-extern void VectorE0(void);
-extern void VectorE4(void);
-extern void VectorE8(void);
-extern void VectorEC(void);
-extern void VectorF0(void); // Peripheral Id 44
+extern void VectorE0(void); // Peripheral Id 44
 #endif
 
 /**
@@ -154,8 +150,7 @@ vectors_t _vectors = {
     VectorB0,           VectorB4,           VectorB8,           VectorBC,
     VectorC0,           VectorC4,           VectorC8,           VectorCC,
     VectorD0,           VectorD4,           VectorD8,           VectorDC,
-    VectorE0,           VectorE4,           VectorE8,			VectorEC,
-    VectorF0,
+    VectorE0
   }
 };
 
@@ -230,9 +225,5 @@ void VectorD4(void) __attribute__((weak, alias("_unhandled_exception")));
 void VectorD8(void) __attribute__((weak, alias("_unhandled_exception")));
 void VectorDC(void) __attribute__((weak, alias("_unhandled_exception")));
 void VectorE0(void) __attribute__((weak, alias("_unhandled_exception")));
-void VectorE4(void) __attribute__((weak, alias("_unhandled_exception")));
-void VectorE8(void) __attribute__((weak, alias("_unhandled_exception")));
-void VectorEC(void) __attribute__((weak, alias("_unhandled_exception")));
-void VectorF0(void) __attribute__((weak, alias("_unhandled_exception")));
 
 /** @} */

@@ -265,9 +265,9 @@ void WDT_Handler        ( void );
 /**  SOFTWARE PERIPHERAL API DEFINITION FOR SAM3X8E */
 /* ************************************************************************** */
 /** \addtogroup SAM3X8E_api Peripheral Software API */
+#include "component/component_pdc.h"
 /*@{*/
 
-#include "component/component_adc.h"
 #include "component/component_can.h"
 #include "component/component_chipid.h"
 #include "component/component_dacc.h"
@@ -277,7 +277,6 @@ void WDT_Handler        ( void );
 #include "component/component_gpbr.h"
 #include "component/component_hsmci.h"
 #include "component/component_matrix.h"
-#include "component/component_pdc.h"
 #include "component/component_pio.h"
 #include "component/component_pmc.h"
 #include "component/component_pwm.h"
@@ -286,6 +285,7 @@ void WDT_Handler        ( void );
 #include "component/component_rtt.h"
 #include "component/component_smc.h"
 #include "component/component_spi.h"
+#include "component/component_adc.h"
 #include "component/component_ssc.h"
 #include "component/component_supc.h"
 #include "component/component_tc.h"
@@ -576,5 +576,7 @@ void WDT_Handler        ( void );
 #endif
 
 /*@}*/
+
+#include "sam3x8e_isr.h"
 
 #endif /* _SAM3X8E_ */

@@ -25,7 +25,7 @@
 */
 
 /**
- * @file    templates/hal_lld.h
+ * @file    SAM3X8E/hal_lld.h
  * @brief   HAL subsystem low level driver header template.
  *
  * @addtogroup HAL
@@ -36,6 +36,7 @@
 #define _HAL_LLD_H_
 
 #include "sam3x8e.h"
+#include "sam3xa_common.h"
 
 /*===========================================================================*/
 /* Driver constants.                                                         */

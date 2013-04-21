@@ -1,7 +1,7 @@
 /*
     ChibiOS/RT - Copyright (C) 2013 Sam Wong
 
-    This file is part of Arduino Due patch for ChibiOS/RT.
+	This file is part of Arduino Due patch for ChibiOS/RT.
 
     ChibiOS/RT is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,29 +22,24 @@
     a combined work that includes ChibiOS/RT, without being obliged to provide
     the source code for any proprietary components. See the file exception.txt
     for full details of how and when the exception can be applied.
-*/
-
-#ifndef _BOARD_H_
-#define _BOARD_H_
-
-/*
- * Setup for the Arduino Due
  */
 
-/*
- * Board identifier.
+/**
+ * @file    SAM3XA/sam3xa_common.h
+ * @brief   Include common definitions for SAM3XA
+ *
+ * @addtogroup SAM3XA_COMMON
+ * @{
  */
-#define BOARD_ARDUINO_DUE
-#define BOARD_NAME              "Arduino Due"
 
-#if !defined(_FROM_ASM_)
-#ifdef __cplusplus
-extern "C" {
-#endif
-  void boardInit(void);
-#ifdef __cplusplus
-}
-#endif
-#endif /* _FROM_ASM_ */
+#ifndef _SAM3XA_COMMON_
+#define _SAM3XA_COMMON_
 
-#endif /* _BOARD_H_ */
+#include <stddef.h>
+#include "peripheral_config.h"
+#include "pdc.h"
+#include "pmc.h"
+
+#endif /* _SAM3XA_COMMON_ */
+
+/** @} */

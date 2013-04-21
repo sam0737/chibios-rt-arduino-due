@@ -25,7 +25,7 @@
 */
 
 /**
- * @file    templates/pal_lld.h
+ * @file    SAM3X8E/pal_lld.h
  * @brief   PAL subsystem low level driver header template.
  *
  * @addtogroup PAL
@@ -36,8 +36,6 @@
 #define _PAL_LLD_H_
 
 #if HAL_USE_PAL || defined(__DOXYGEN__)
-
-#include "sam3x8e.h"
 
 /*===========================================================================*/
 /* Unsupported modes and specific modes                                      */

@@ -25,7 +25,7 @@
 */
 
 /**
- * @file    templates/pal_lld.c
+ * @file    SAM3X8E/pal_lld.c
  * @brief   PAL subsystem low level driver template.
  *
  * @addtogroup PAL
