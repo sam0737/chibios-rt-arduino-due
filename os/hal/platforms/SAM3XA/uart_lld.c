@@ -48,22 +48,42 @@ UARTDriver UARTD1 = {
 
 /** @brief USART0 USART driver identifier.*/
 #if SAM3XA_UART_USE_USART0 || defined(__DOXYGEN__)
-UARTDriver UARTD2;
+UARTDriver UARTD2 = {
+    .peripheral_id = ID_USART0,
+    .irq_id = USART0_IRQn,
+    .is_usart = 1,
+    .reg.usart = USART0
+};
 #endif
 
 /** @brief USART1 USART driver identifier.*/
 #if SAM3XA_UART_USE_USART1 || defined(__DOXYGEN__)
-UARTDriver UARTD3;
+UARTDriver UARTD3 = {
+    .peripheral_id = ID_USART1,
+    .irq_id = USART1_IRQn,
+    .is_usart = 1,
+    .reg.usart = USART1
+};
 #endif
 
 /** @brief USART2 USART driver identifier.*/
 #if SAM3XA_UART_USE_USART2 || defined(__DOXYGEN__)
-UARTDriver UARTD4;
+UARTDriver UARTD4 = {
+    .peripheral_id = ID_USART2,
+    .irq_id = USART2_IRQn,
+    .is_usart = 1,
+    .reg.usart = USART2
+};
 #endif
 
 /** @brief USART3 USART driver identifier.*/
 #if SAM3XA_UART_USE_USART3 || defined(__DOXYGEN__)
-UARTDriver UARTD5;
+UARTDriver UARTD5 = {
+    .peripheral_id = ID_USART3,
+    .irq_id = USART3_IRQn,
+    .is_usart = 1,
+    .reg.usart = USART3
+};
 #endif
 
 /*===========================================================================*/
@@ -154,7 +174,7 @@ static void usart_start(UARTDriver *uartp, uint32_t irq_priority) {
 
 
   // Enable interrupts for error conditions
-  uartp->reg.uart->UART_IER = UART_IER_PARE | UART_IER_FRAME | UART_IER_OVRE;
+  u->UART_IER = UART_IER_PARE | UART_IER_FRAME | UART_IER_OVRE;
 
   /* Starting the receiver idle loop.*/
   set_rx_idle_loop(uartp);
@@ -181,7 +201,7 @@ static void serve_usart_irq(UARTDriver *uartp) {
   }
   if (isr & UART_SR_TXEMPTY) {
     uartp->txstate = UART_TX_COMPLETE;
-    uartp->reg.uart->UART_IDR = UART_IDR_TXEMPTY;
+    u->UART_IDR = UART_IDR_TXEMPTY;
     /* End of transmission, a callback is generated.*/
     if (uartp->config->txend1_cb != NULL)
       uartp->config->txend1_cb(uartp);
@@ -192,13 +212,13 @@ static void serve_usart_irq(UARTDriver *uartp) {
       uartp->txstate = UART_TX_IDLE;
   }
   if (isr & UART_SR_ENDTX) {
-    uartp->reg.uart->UART_IDR = UART_IDR_ENDTX;
+    u->UART_IDR = UART_IDR_ENDTX;
     /* End of transmission, a callback is generated.*/
     if (uartp->config->txend2_cb != NULL)
       uartp->config->txend2_cb(uartp);
   }
   if (isr & UART_SR_ENDRX) {
-    uartp->reg.uart->UART_IDR = UART_IDR_ENDRX;
+    u->UART_IDR = UART_IDR_ENDRX;
     uartp->rxstate = UART_RX_COMPLETE;
     /* End of receive buffering, a callback is generated.*/
     if (uartp->config->rxend_cb != NULL)
@@ -214,7 +234,7 @@ static void serve_usart_irq(UARTDriver *uartp) {
   if (isr & UART_SR_RXRDY) {
     /* End of receive buffering, a callback is generated.*/
     if (uartp->config->rxchar_cb != NULL)
-      uartp->config->rxchar_cb(uartp, uartp->reg.uart->UART_RHR);
+      uartp->config->rxchar_cb(uartp, u->UART_RHR);
   }
 }
 
@@ -343,8 +363,6 @@ void uart_lld_start(UARTDriver *uartp) {
   chDbgCheck(CORTEX_IS_VALID_KERNEL_PRIORITY(uartp->config->irq_priority),
       "UART irq_priority");
 
-  uartp->rxstate = UART_RX_IDLE;
-  uartp->txstate = UART_TX_IDLE;
   usart_start(uartp, irq_priority);
 }
 
