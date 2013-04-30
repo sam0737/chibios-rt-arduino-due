@@ -37,7 +37,7 @@
 
 #include "sam3x8e.h"
 
-/* Clock settings (84MHz) */
+/* Clock settings (12MHz crystal to 84MHz) */
 #ifndef SYS_BOARD_OSCOUNT
 #define SYS_BOARD_OSCOUNT   (CKGR_MOR_MOSCXTST(0x8))
 #define SYS_BOARD_PLLAR     (CKGR_PLLAR_ONE \

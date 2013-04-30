@@ -160,7 +160,7 @@ static void usart_start(UARTDriver *uartp, uint32_t irq_priority) {
   u->UART_CR = UART_CR_RXEN | UART_CR_TXEN | UART_CR_RSTSTA;
   u->UART_BRGR = SystemCoreClock / 16 / uartp->config->speed;
 
-  pmc_enable_peripheral_clock_with_div(uartp->peripheral_id, PMC_PCR_DIV_PERIPH_DIV_MCK);
+  pmc_enable_peripheral_clock(uartp->peripheral_id);
 
   uartp->reg.usart->US_MR = uartp->config->mr;
   if (uartp->is_usart) {

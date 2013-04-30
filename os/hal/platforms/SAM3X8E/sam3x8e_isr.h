@@ -53,37 +53,41 @@
 #define SAM3XA_EFC1_HANDLER      Vector5C /*  7 Enhanced Flash Controller 1 */
 #define SAM3XA_UART_HANDLER      Vector60 /*  8 Universal Asynchronous Receiver Transceiver */
 #define SAM3XA_SMC_HANDLER       Vector64 /*  9 Static Memory Controller */
-#define SAM3XA_PIOA_HANDLER      Vector68 /* 11 Parallel I/O Controller A, */
-#define SAM3XA_PIOB_HANDLER      Vector6C /* 12 Parallel I/O Controller B */
-#define SAM3XA_PIOC_HANDLER      Vector70 /* 13 Parallel I/O Controller C */
-#define SAM3XA_PIOD_HANDLER      Vector74 /* 14 Parallel I/O Controller D */
-#define SAM3XA_USART0_HANDLER    Vector78 /* 17 USART 0 */
-#define SAM3XA_USART1_HANDLER    Vector7C /* 18 USART 1 */
-#define SAM3XA_USART2_HANDLER    Vector80 /* 19 USART 2 */
-#define SAM3XA_USART3_HANDLER    Vector84 /* 20 USART 3 */
-#define SAM3XA_HSMCI_HANDLER     Vector88 /* 21 Multimedia Card Interface */
-#define SAM3XA_TWI0_HANDLER      Vector8C /* 22 Two-Wire Interface 0 */
-#define SAM3XA_TWI1_HANDLER      Vector90 /* 23 Two-Wire Interface 1 */
-#define SAM3XA_SPI0_HANDLER      Vector94 /* 24 Serial Peripheral Interface */
-#define SAM3XA_SSC_HANDLER       Vector98 /* 26 Synchronous Serial Controller */
-#define SAM3XA_TC0_HANDLER       Vector9C /* 27 Timer Counter 0 */
-#define SAM3XA_TC1_HANDLER       VectorA0 /* 28 Timer Counter 1 */
-#define SAM3XA_TC2_HANDLER       VectorA4 /* 29 Timer Counter 2 */
-#define SAM3XA_TC3_HANDLER       VectorA8 /* 30 Timer Counter 3 */
-#define SAM3XA_TC4_HANDLER       VectorAC /* 31 Timer Counter 4 */
-#define SAM3XA_TC5_HANDLER       VectorB0 /* 32 Timer Counter 5 */
-#define SAM3XA_TC6_HANDLER       VectorB4 /* 33 Timer Counter 6 */
-#define SAM3XA_TC7_HANDLER       VectorB8 /* 34 Timer Counter 7 */
-#define SAM3XA_TC8_HANDLER       VectorBC /* 35 Timer Counter 8 */
-#define SAM3XA_PWM_HANDLER       VectorC0 /* 36 Pulse Width Modulation Controller */
-#define SAM3XA_ADC_HANDLER       VectorC4 /* 37 ADC Controller */
-#define SAM3XA_DACC_HANDLER      VectorC8 /* 38 DAC Controller */
-#define SAM3XA_DMAC_HANDLER      VectorCC /* 39 DMA Controller */
-#define SAM3XA_UOTGHS_HANDLER    VectorD0 /* 40 USB OTG High Speed */
-#define SAM3XA_TRNG_HANDLER      VectorD4 /* 41 True Random Number Generator */
-#define SAM3XA_EMAC_HANDLER      VectorD8 /* 42 Ethernet MAC */
-#define SAM3XA_CAN0_HANDLER      VectorDC /* 43 CAN Controller 0 */
-#define SAM3XA_CAN1_HANDLER      VectorE0 /* 44 CAN Controller 1 */
+                                          /* 10 Reserved */
+#define SAM3XA_PIOA_HANDLER      Vector6C /* 11 Parallel I/O Controller A, */
+#define SAM3XA_PIOB_HANDLER      Vector70 /* 12 Parallel I/O Controller B */
+#define SAM3XA_PIOC_HANDLER      Vector74 /* 13 Parallel I/O Controller C */
+#define SAM3XA_PIOD_HANDLER      Vector78 /* 14 Parallel I/O Controller D */
+                                          /* 15 Reserved */
+                                          /* 16 Reserved */
+#define SAM3XA_USART0_HANDLER    Vector84 /* 17 USART 0 */
+#define SAM3XA_USART1_HANDLER    Vector88 /* 18 USART 1 */
+#define SAM3XA_USART2_HANDLER    Vector8C /* 19 USART 2 */
+#define SAM3XA_USART3_HANDLER    Vector90 /* 20 USART 3 */
+#define SAM3XA_HSMCI_HANDLER     Vector94 /* 21 Multimedia Card Interface */
+#define SAM3XA_TWI0_HANDLER      Vector98 /* 22 Two-Wire Interface 0 */
+#define SAM3XA_TWI1_HANDLER      Vector9C /* 23 Two-Wire Interface 1 */
+#define SAM3XA_SPI0_HANDLER      VectorA0 /* 24 Serial Peripheral Interface */
+                                          /* 25 Reserved */
+#define SAM3XA_SSC_HANDLER       VectorA8 /* 26 Synchronous Serial Controller */
+#define SAM3XA_TC0_HANDLER       VectorAC /* 27 Timer Counter 0 */
+#define SAM3XA_TC1_HANDLER       VectorB0 /* 28 Timer Counter 1 */
+#define SAM3XA_TC2_HANDLER       VectorB4 /* 29 Timer Counter 2 */
+#define SAM3XA_TC3_HANDLER       VectorB8 /* 30 Timer Counter 3 */
+#define SAM3XA_TC4_HANDLER       VectorBC /* 31 Timer Counter 4 */
+#define SAM3XA_TC5_HANDLER       VectorC0 /* 32 Timer Counter 5 */
+#define SAM3XA_TC6_HANDLER       VectorC4 /* 33 Timer Counter 6 */
+#define SAM3XA_TC7_HANDLER       VectorC8 /* 34 Timer Counter 7 */
+#define SAM3XA_TC8_HANDLER       VectorCC /* 35 Timer Counter 8 */
+#define SAM3XA_PWM_HANDLER       VectorD0 /* 36 Pulse Width Modulation Controller */
+#define SAM3XA_ADC_HANDLER       VectorD4 /* 37 ADC Controller */
+#define SAM3XA_DACC_HANDLER      VectorD8 /* 38 DAC Controller */
+#define SAM3XA_DMAC_HANDLER      VectorDC /* 39 DMA Controller */
+#define SAM3XA_UOTGHS_HANDLER    VectorE0 /* 40 USB OTG High Speed */
+#define SAM3XA_TRNG_HANDLER      VectorE4 /* 41 True Random Number Generator */
+#define SAM3XA_EMAC_HANDLER      VectorE8 /* 42 Ethernet MAC */
+#define SAM3XA_CAN0_HANDLER      VectorEC /* 43 CAN Controller 0 */
+#define SAM3XA_CAN1_HANDLER      VectorF0 /* 44 CAN Controller 1 */
 /** }@ */
 
 #endif /* _SAM3X8E_ISR_ */

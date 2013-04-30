@@ -143,14 +143,13 @@ static void usart_stop(SerialDriver *sdp) {
  * @param[in] sdp       pointer to the @p SerialDriver object
  * @param[in] config    pointer to the @p SerialConfig object
  */
-static void usart_start(SerialDriver *sdp, SerialConfig *config, uint32_t irq_priority) {
+static void usart_start(SerialDriver *sdp, const SerialConfig *config, uint32_t irq_priority) {
   Uart* u = sdp->reg.uart;
 
   u->UART_CR = UART_CR_RXEN | UART_CR_TXEN | UART_CR_RSTSTA;
   u->UART_BRGR = SystemCoreClock / 16 / config->speed;
 
-  pmc_enable_peripheral_clock_with_div(sdp->peripheral_id, PMC_PCR_DIV_PERIPH_DIV_MCK);
-
+  pmc_enable_peripheral_clock(sdp->peripheral_id);
   sdp->reg.usart->US_MR = config->mr;
   if (sdp->is_usart) {
     sdp->reg.usart->US_RTOR = config->rtor;

@@ -107,6 +107,7 @@ void pmc_enable_peripheral_clock(uint32_t peripheral_id)
 /**
  * @brief Enable the peripheral clock set clock division for the
  *        specific device
+ * @note  Only CAN0, CAN1 can use divider
  *
  * @param peripheral_id The specific device id to enable
  * @param div Clock division
@@ -117,13 +118,9 @@ void pmc_enable_peripheral_clock_with_div(uint32_t peripheral_id, uint32_t div)
   // Disable
   pmc_disable_peripheral_clock(peripheral_id);
   // Set DIV
-  if (peripheral_id < 32) {
-    PMC->PMC_PCDR0 = PMC_PCR_PID(peripheral_id) | div | PMC_PCR_CMD;
-  } else {
-    PMC->PMC_PCDR1 = PMC_PCR_PID(peripheral_id - 32) | div | PMC_PCR_CMD;
-  }
+  PMC->PMC_PCR = PMC_PCR_PID(peripheral_id) | div | PMC_PCR_CMD;
   // Re-enable
-  pmc_disable_peripheral_clock(peripheral_id);
+  pmc_enable_peripheral_clock(peripheral_id);
 }
 
 /**
@@ -134,11 +131,67 @@ void pmc_enable_peripheral_clock_with_div(uint32_t peripheral_id, uint32_t div)
 void pmc_disable_peripheral_clock(uint32_t peripheral_id)
 {
   if (peripheral_id < 32) {
-    PMC->PMC_PCER0 = 1 << peripheral_id;
+    PMC->PMC_PCDR0 = 1 << peripheral_id;
   } else {
     peripheral_id -= 32;
-    PMC->PMC_PCER1 = 1 << peripheral_id;
+    PMC->PMC_PCDR1 = 1 << peripheral_id;
   }
+}
+
+/**
+ * \brief Enable UPLL clock.
+ */
+void pmc_enable_upll_clock(void)
+{
+  PMC->CKGR_UCKR = CKGR_UCKR_UPLLCOUNT(3) | CKGR_UCKR_UPLLEN;
+
+  /* Wait UTMI PLL Lock Status */
+  while (!(PMC->PMC_SR & PMC_SR_LOCKU));
+}
+
+/**
+ * \brief Disable UPLL clock.
+ */
+void pmc_disable_upll_clock(void)
+{
+  PMC->CKGR_UCKR &= ~CKGR_UCKR_UPLLEN;
+}
+
+/**
+ * \brief Is UPLL locked?
+ *
+ * \retval 0 Not locked.
+ * \retval 1 Locked.
+ */
+uint32_t pmc_is_locked_upll(void)
+{
+  return (PMC->PMC_SR & PMC_SR_LOCKU);
+}
+
+/**
+ * \brief Switch UDP (USB) clock source selection to UPLL clock.
+ *
+ * \param dw_usbdiv Clock divisor.
+ */
+void pmc_switch_udpck_to_upllck(uint32_t ul_usbdiv)
+{
+  PMC->PMC_USB = PMC_USB_USBS | PMC_USB_USBDIV(ul_usbdiv);
+}
+
+/**
+ * \brief Enable UDP (USB) clock.
+ */
+void pmc_enable_udpck(void)
+{
+  PMC->PMC_SCER = PMC_SCER_UOTGCLK;
+}
+
+/**
+ * \brief Disable UDP (USB) clock.
+ */
+void pmc_disable_udpck(void)
+{
+  PMC->PMC_SCDR = PMC_SCDR_UOTGCLK;
 }
 
 /** @} */

@@ -76,6 +76,12 @@ void pmc_set_writeprotect(uint32_t enable);
 void pmc_enable_peripheral_clock(uint32_t peripheral_id);
 void pmc_enable_peripheral_clock_with_div(uint32_t peripheral_id, uint32_t div);
 void pmc_disable_peripheral_clock(uint32_t peripheral_id);
+void pmc_enable_upll_clock(void);
+void pmc_disable_upll_clock(void);
+uint32_t pmc_is_locked_upll(void);
+void pmc_switch_udpck_to_upllck(uint32_t ul_usbdiv);
+void pmc_enable_udpck(void);
+void pmc_disable_udpck(void);
 #ifdef __cplusplus
 }
 #endif

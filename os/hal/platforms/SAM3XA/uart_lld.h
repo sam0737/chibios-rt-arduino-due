@@ -263,7 +263,6 @@ struct UARTDriver {
 #endif
   /* End of the mandatory fields.*/
 
-
   /**
    * @brief The peripheral id of the UART/USART device
    */
