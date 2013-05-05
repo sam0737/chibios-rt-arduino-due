@@ -26,13 +26,38 @@
 #include "hal.h"
 #include "chprintf.h"
 
-#define USBDEBUG 0
+#if 0
+static volatile uint32_t g_x = 0;
+#define USBDEBUG(...) do {\
+	chprintf((BaseSequentialStream *)&SD1, "%d", g_x++); \
+  chprintf((BaseSequentialStream *)&SD1, __VA_ARGS__); \
+} while (0);
+#else
+#define USBDEBUG(...) do{ } while ( false );
+#endif
+
 
 #if HAL_USE_USB || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
+
+/**
+ * The smallest EP that supports DMA
+ */
+#define DEVDMA_BASE 1
+
+/**
+ * Maximum DMA transfer size (32KiB)
+ */
+#define DEVDMA_ENDPOINT_MAX_TRANS 0x8000
+
+/**
+ * @brief A set of DMA descriptors for DMA queue transfer.
+ */
+static UotghsDevdma dma_desc[UOTGHSDEVDMA_NUMBER - DEVDMA_BASE + 1][2]
+  __attribute__((aligned(0x10)));
 
 /**
  * @brief   8-bit access to FIFO data register of selected endpoint.
@@ -51,7 +76,8 @@
  * @param   ep    Endpoint number
  */
 #define is_dma_ep(ep) \
-    (ep >= 1 && ep < UOTGHSDEVDMA_NUMBER)
+    0
+// (ep >= 1 && ep < UOTGHSDEVDMA_NUMBER)
 
 /*===========================================================================*/
 /* Driver exported variables.                                                */
@@ -115,42 +141,96 @@ static const USBEndpointConfig ep0config = {
 /**
  * @brief   Writes to a dedicated packet buffer.
  *
- * @param[in] p         pointer the USB fifo buffer
+ * @param[in] ep        Endpoint number
  * @param[in] buf       buffer where to fetch the packet data
  * @param[in] n         maximum number of bytes to copy. This value must
  *                      not exceed the maximum packet size for this endpoint.
  *
  * @notapi
  */
-static void usb_packet_write_from_buffer(uint8_t *p,
+static void usb_packet_write_from_buffer(USBDriver *usbp, uint8_t ep,
                                          const uint8_t *buf,
                                          size_t n) {
-  while (n > 0) {
-    if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "%.2x", *buf);
-    *p++ = *buf++;
-    n--;
+  if (is_dma_ep(ep))
+  {
+    UotghsDevdma *dma = &dma_desc[ep - DEVDMA_BASE][0];
+    dma->UOTGHS_DEVDMANXTDSC = 0;
+    dma->UOTGHS_DEVDMAADDRESS = (uint32_t)buf;
+    dma->UOTGHS_DEVDMACONTROL = UOTGHS_DEVDMACONTROL_BUFF_LENGTH(n) |
+        UOTGHS_DEVDMACONTROL_END_BUFFIT |
+        // If all packet are full - let software to send ZLP
+        // ((n % usbp->ep_size[ep]) != 0 ? UOTGHS_DEVDMACONTROL_END_B_EN : 0) |
+        UOTGHS_DEVDMACONTROL_END_B_EN |
+        UOTGHS_DEVDMACONTROL_CHANN_ENB;
+  } else
+  {
+    uint8_t *p = (uint8_t*)&get_endpoint_fifo_access8(ep);
+    while (n > 0) {
+      USBDEBUG("%.2x", *buf);
+      *p++ = *buf++;
+      n--;
+    }
+    USBDEBUG("\r\n");
   }
-  if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "\r\n");
 }
 
 /**
  * @brief   Writes to a dedicated packet buffer.
  *
- * @param[in] p         pointer the USB fifo buffer
+ * @param[in] ep        Endpoint number
  * @param[in] buf       buffer where to fetch the packet data
  * @param[in] n         maximum number of bytes to copy. This value must
  *                      not exceed the maximum packet size for this endpoint.
  *
  * @notapi
  */
-static void usb_packet_write_from_queue(uint8_t *p,
+static void usb_packet_write_from_queue(USBDriver *usbp, uint8_t ep,
                                         OutputQueue *oqp, size_t n) {
+  (void*) usbp;
   size_t nb = n;
-  while (n > 0) {
-    *p++ = *oqp->q_rdptr++;
-    if (oqp->q_rdptr >= oqp->q_top)
-      oqp->q_rdptr = oqp->q_buffer;
-    n--;
+  if (is_dma_ep(ep)) {
+    if (oqp->q_rdptr + n <= oqp->q_top)
+    {
+      UotghsDevdma *dma = &dma_desc[ep - DEVDMA_BASE][0];
+      dma->UOTGHS_DEVDMAADDRESS = (uint32_t)oqp->q_rdptr;
+      dma->UOTGHS_DEVDMACONTROL = UOTGHS_DEVDMACONTROL_BUFF_LENGTH(n) |
+          UOTGHS_DEVDMACONTROL_END_BUFFIT |
+          // If all packet are full - let software to send ZLP
+          //((n % usbp->ep_size[ep]) != 0 ? UOTGHS_DEVDMACONTROL_END_B_EN : 0) |
+          UOTGHS_DEVDMACONTROL_END_TR_EN | UOTGHS_DEVDMACONTROL_END_TR_IT |
+          UOTGHS_DEVDMACONTROL_CHANN_ENB;
+      if (oqp->q_rdptr >= oqp->q_top)
+        oqp->q_rdptr = oqp->q_buffer;
+      oqp->q_rdptr += n;
+    } else {
+      size_t first_n = oqp->q_top - oqp->q_rdptr;
+
+      UotghsDevdma *dma = &dma_desc[ep - DEVDMA_BASE][0];
+      UotghsDevdma *dma_next = &dma_desc[ep - DEVDMA_BASE][1];
+
+      dma->UOTGHS_DEVDMANXTDSC = (uint32_t)dma_next;
+      dma->UOTGHS_DEVDMAADDRESS = (uint32_t)oqp->q_rdptr;
+      dma->UOTGHS_DEVDMACONTROL = UOTGHS_DEVDMACONTROL_BUFF_LENGTH(first_n) |
+          UOTGHS_DEVDMACONTROL_LDNXT_DSC | UOTGHS_DEVDMACONTROL_CHANN_ENB;
+
+      dma_next->UOTGHS_DEVDMAADDRESS = (uint32_t)oqp->q_rdptr;
+      dma_next->UOTGHS_DEVDMACONTROL = UOTGHS_DEVDMACONTROL_BUFF_LENGTH(n - first_n) |
+          UOTGHS_DEVDMACONTROL_END_BUFFIT |
+          // If all packet are full - let software to send ZLP
+          //(((n-first_n) % usbp->ep_size[ep]) != 0 ? UOTGHS_DEVDMACONTROL_END_B_EN : 0) |
+          UOTGHS_DEVDMACONTROL_END_TR_EN | UOTGHS_DEVDMACONTROL_END_TR_IT |
+          UOTGHS_DEVDMACONTROL_CHANN_ENB;
+
+      oqp->q_rdptr = oqp->q_buffer + n - first_n;
+    }
+  } else {
+    uint8_t *p = (uint8_t*)&get_endpoint_fifo_access8(ep);
+    while (n > 0) {
+      *p++ = *oqp->q_rdptr++;
+      if (oqp->q_rdptr >= oqp->q_top)
+        oqp->q_rdptr = oqp->q_buffer;
+      n--;
+    }
   }
 
   /* Updating queue. Note, the lock is done in this unusual way because this
@@ -175,14 +255,16 @@ static void usb_packet_write_from_queue(uint8_t *p,
  *
  * @notapi
  */
-static void usb_packet_read_to_buffer(uint8_t *p,
+static void usb_packet_read_to_buffer(USBDriver *usbp, uint8_t ep,
                                       uint8_t *buf, size_t n) {
+  (USBDriver) *usbp;
+  uint8_t *p = (uint8_t*)&get_endpoint_fifo_access8(ep);
   while (n > 0) {
-    if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "%.2x", *p);
-    *buf++ = *p++;
+    uint8_t c = *buf++ = *p++;
+    USBDEBUG("%.2x", c);
     n--;
   }
-  if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "\r\n");
+  USBDEBUG("\r\n");
 }
 
 /**
@@ -195,17 +277,18 @@ static void usb_packet_read_to_buffer(uint8_t *p,
  *
  * @notapi
  */
-static void usb_packet_read_to_queue(uint8_t *p,
+static void usb_packet_read_to_queue(USBDriver *usbp, uint8_t ep,
                                      InputQueue *iqp, size_t n) {
+  uint8_t *p = (uint8_t*)&get_endpoint_fifo_access8(ep);
   size_t nb = n;
   while (n > 0) {
-    if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "%.2x", *p);
-    *iqp->q_wrptr++ = *p++;
+    uint8_t c = *iqp->q_wrptr++ = *p++;
+    USBDEBUG("%.2x", c);
     if (iqp->q_wrptr >= iqp->q_top)
       iqp->q_wrptr = iqp->q_buffer;
     n--;
   }
-  if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "\r\n");
+  USBDEBUG("\r\n");
 
   /* Updating queue.*/
   chSysLockFromIsr();
@@ -299,8 +382,6 @@ static void serve_usb_ep_irq(USBDriver *usbp, usbep_t ep) {
   const USBEndpointConfig *epcp = usbp->epc[ep];
   uint8_t isr = u->UOTGHS_DEVEPTISR[ep] & u->UOTGHS_DEVEPTIMR[ep];
   uint8_t i;
-
-  //if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "I %d %d\r\n", ep, isr);
   // Setup event
   if (ep == 0 && (isr & UOTGHS_DEVEPTISR_RXSTPI))
   {
@@ -310,7 +391,7 @@ static void serve_usb_ep_irq(USBDriver *usbp, usbep_t ep) {
     u->UOTGHS_DEVEPTICR[ep] = UOTGHS_DEVEPTICR_RXSTPIC;
 
     uint8_t *buf = usbp->setup;
-    if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "S %.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x\r\n",
+    USBDEBUG("S %.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x\r\n",
           buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
 
     _usb_isr_invoke_setup_cb(usbp, ep);
@@ -321,7 +402,7 @@ static void serve_usb_ep_irq(USBDriver *usbp, usbep_t ep) {
   {
     USBInEndpointState *isp = usbp->epc[ep]->in_state;
 
-    if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "TX %d>%d %d\r\n", ep, isp->txcnt, isp->txsize);
+    USBDEBUG("TX %d>%d %d\r\n", ep, isp->txcnt, isp->txsize);
     if (isp->txcnt < isp->txsize)
     {
       usb_lld_prepare_transmit(usbp, ep);
@@ -341,23 +422,24 @@ static void serve_usb_ep_irq(USBDriver *usbp, usbep_t ep) {
     USBOutEndpointState *osp = usbp->epc[ep]->out_state;
 
     uint8_t shortpacket = u->UOTGHS_DEVEPTISR[ep] & UOTGHS_DEVEPTISR_SHORTPACKET;
+    u->UOTGHS_DEVEPTICR[ep] = UOTGHS_DEVEPTICR_RXOUTIC | UOTGHS_DEVEPTICR_SHORTPACKETC;
+
     uint16_t n = (u->UOTGHS_DEVEPTISR[ep] & UOTGHS_DEVEPTISR_BYCT_Msk)
         >> UOTGHS_DEVEPTISR_BYCT_Pos;
     osp->rxcnt += n;
 
-    if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "RX %d>%d %d\r\n", ep, osp->rxcnt, osp->rxsize);
+    USBDEBUG("RX %d>%d %d\r\n", ep, osp->rxcnt, osp->rxsize);
     if (epcp->out_state->rxqueued) {
-      usb_packet_read_to_queue((uint8_t*)&get_endpoint_fifo_access8(ep),
+      usb_packet_read_to_queue(usbp, ep,
                                epcp->out_state->mode.queue.rxqueue,
                                n);
     } else {
-      usb_packet_read_to_buffer((uint8_t*)&get_endpoint_fifo_access8(ep),
+      usb_packet_read_to_buffer(usbp, ep,
                                 epcp->out_state->mode.linear.rxbuf,
                                 n);
       epcp->out_state->mode.linear.rxbuf  += n;
     }
 
-    u->UOTGHS_DEVEPTICR[ep] = UOTGHS_DEVEPTICR_RXOUTIC | UOTGHS_DEVEPTICR_SHORTPACKETC;
     if (ep != 0)
       u->UOTGHS_DEVEPTIDR[ep] = UOTGHS_DEVEPTIDR_FIFOCONC;
 
@@ -383,8 +465,56 @@ static void serve_usb_ep_irq(USBDriver *usbp, usbep_t ep) {
  */
 static void serve_usb_dma_irq(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
-  (void)u;
-  (void)ep;
+  UotghsDevdma *dma = &u->UOTGHS_DEVDMA[ep - DEVDMA_BASE];
+  // Clear flags
+  uint32_t status = dma->UOTGHS_DEVDMASTATUS;
+
+  u->UOTGHS_DEVIDR = UOTGHS_DEVIDR_DMA_1 << (ep - 1);
+
+  USBDEBUG("**DMA %d %.8x s%.8x m%.8x\r\n", ep, status, u->UOTGHS_DEVEPTISR[ep], u->UOTGHS_DEVEPTIMR[ep]);
+
+  return;
+  if (u->UOTGHS_DEVEPTISR[ep] & UOTGHS_DEVEPTISR_TXINI)
+  {
+    USBInEndpointState *isp = usbp->epc[ep]->in_state;
+    if (isp->txcnt < isp->txsize)
+    {
+      usb_lld_prepare_transmit(usbp, ep);
+      chSysLockFromIsr();
+      usb_lld_start_in(usbp, ep);
+      chSysUnlockFromIsr();
+    } else {
+      /* Transfer completed */
+      _usb_isr_invoke_in_cb(usbp, ep);
+    }
+  } else if (u->UOTGHS_DEVEPTISR[ep] & UOTGHS_DEVEPTISR_RXOUTI)
+  {
+    const USBEndpointConfig *epcp = usbp->epc[ep];
+    USBOutEndpointState *osp = usbp->epc[ep]->out_state;
+
+    uint16_t n = (dma->UOTGHS_DEVDMACONTROL & UOTGHS_DEVDMACONTROL_BUFF_LENGTH_Msk)
+        >> UOTGHS_DEVDMACONTROL_BUFF_LENGTH_Pos;
+    osp->rxcnt -= n;
+
+    USBDEBUG("DRX %d>%d %d\r\n", ep, osp->rxcnt, osp->rxsize);
+    if (epcp->out_state->rxqueued) {
+      chSysLockFromIsr();
+
+      InputQueue *iqp = epcp->out_state->mode.queue.rxqueue;
+      iqp->q_wrptr += osp->rxcnt;
+      if (iqp->q_wrptr >= iqp->q_top)
+        iqp->q_wrptr -= iqp->q_top - iqp->q_buffer;
+      iqp->q_counter += osp->rxcnt;
+      while (notempty(&iqp->q_waiting))
+        chSchReadyI(fifo_remove(&iqp->q_waiting))->p_u.rdymsg = Q_OK;
+
+      chSysUnlockFromIsr();
+    } else {
+      epcp->out_state->mode.linear.rxbuf += osp->rxcnt;
+    }
+
+    _usb_isr_invoke_out_cb(usbp, ep);
+  }
 }
 
 /**
@@ -397,6 +527,8 @@ static void serve_usb_irq(USBDriver *usbp) {
   uint32_t isr = u->UOTGHS_DEVISR & u->UOTGHS_DEVIMR;
   uint32_t c = 0;
 
+  //toggle_tx();
+  //USBDEBUG("*I %.8x\r\n", isr);
   // Reset
   if (isr & UOTGHS_DEVISR_EORST)
   {
@@ -594,6 +726,7 @@ void usb_lld_init_endpoint(USBDriver *usbp, usbep_t ep) {
   /* Bank size */
   if (ep_type != USB_EP_MODE_TYPE_CTRL) {
     if (epcp->in_maxsize > 0) {
+      // TXIn Endpoint
       cfg |= UOTGHS_DEVEPTCFG_EPDIR_IN;
     }
     if (epcp->bank) {
@@ -625,19 +758,17 @@ void usb_lld_init_endpoint(USBDriver *usbp, usbep_t ep) {
   u->UOTGHS_DEVEPTCFG[ep] = cfg;
   chDbgAssert(u->UOTGHS_DEVEPTISR[ep] & UOTGHS_DEVEPTISR_CFGOK,
       "UOTGHS ep config ok", "UOTGHS config check");
-  if (USBDEBUG)
-    if (!(u->UOTGHS_DEVEPTISR[ep] & UOTGHS_DEVEPTISR_CFGOK))
-      chprintf((BaseSequentialStream *)&SD1, "!!FAILED EP%d\r\n", ep);
 
-  if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "--INIT EP%d %.8x\r\n", ep, cfg);
+  USBDEBUG("--INIT EP%d %.8x\r\n", ep, cfg);
 
   /* Interrupt */
   if ((epcp->ep_mode & USB_EP_MODE_TYPE) == USB_EP_MODE_TYPE_CTRL)
-    u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIMR_RXSTPE;
+    u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_RXSTPES;
 
   u->UOTGHS_DEVIER = UOTGHS_DEVIER_PEP_0 << ep;
-  if (ep < UOTGHSHSTDMA_NUMBER && ep > 0)
+  if (ep < UOTGHSDEVDMA_NUMBER && ep > 0) {
     u->UOTGHS_DEVIER = UOTGHS_DEVIER_DMA_1 << (ep - 1);
+  }
 
   /* Enable endpoint */
   u->UOTGHS_DEVEPT |= UOTGHS_DEVEPT_EPEN0 << ep;
@@ -746,7 +877,7 @@ void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep) {
   // Use DMA? rxsize > 0. Supported channel.
   USBOutEndpointState *osp = usbp->epc[ep]->out_state;
 
-  if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "PR %d>%d\r\n", ep, osp->rxsize);
+  USBDEBUG("PR %d>%d\r\n", ep, osp->rxsize);
 }
 
 /**
@@ -759,25 +890,24 @@ void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep) {
  */
 void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep) {
   size_t n;
-
-  // Use DMA? txsize > 0. Supported channel.
+  size_t n_max = is_dma_ep(ep) ? DEVDMA_ENDPOINT_MAX_TRANS : usbp->ep_size[ep];
 
   Uotghs* u = usbp->Uotghs;
   while (!(u->UOTGHS_DEVEPTISR[ep] & UOTGHS_DEVEPTISR_TXINI));
 
   USBInEndpointState *isp = usbp->epc[ep]->in_state;
   n = isp->txsize - isp->txcnt;
-  if (n > usbp->ep_size[ep])
-    n = usbp->ep_size[ep];
+  if (n > n_max)
+    n = n_max;
   isp->txcnt += n;
 
-  if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "PT %d>%d\r\n", ep ,n);
+  USBDEBUG("PT %d>%d\r\n", ep ,n);
 
   if (isp->txqueued)
-    usb_packet_write_from_queue((uint8_t *)&get_endpoint_fifo_access8(ep),
+    usb_packet_write_from_queue(usbp, ep,
                                 isp->mode.queue.txqueue, n);
   else {
-    usb_packet_write_from_buffer((uint8_t *)&get_endpoint_fifo_access8(ep),
+    usb_packet_write_from_buffer(usbp, ep,
                                  isp->mode.linear.txbuf, n);
     isp->mode.linear.txbuf += n;
   }
@@ -794,7 +924,7 @@ void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep) {
 void usb_lld_start_out(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
   u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_RXOUTES;
-  //if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "S OUT %d\r\n", ep);
+  //USBDEBUG("S OUT %d\r\n", ep);
 }
 
 /**
@@ -807,10 +937,21 @@ void usb_lld_start_out(USBDriver *usbp, usbep_t ep) {
  */
 void usb_lld_start_in(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
-  u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_TXINES;
-  u->UOTGHS_DEVEPTICR[ep] = UOTGHS_DEVEPTICR_TXINIC;
-  if (ep != 0)
-    u->UOTGHS_DEVEPTIDR[ep] = UOTGHS_DEVEPTIDR_FIFOCONC;
+  if (is_dma_ep(ep)) {
+    //toggle_rx();
+    //USBDEBUG("MEOW");
+    UotghsDevdma *dma = &UOTGHS->UOTGHS_DEVDMA[ep - DEVDMA_BASE];
+    dma->UOTGHS_DEVDMANXTDSC = (uint32_t)&dma_desc[ep - DEVDMA_BASE][0];
+    dma->UOTGHS_DEVDMACONTROL = UOTGHS_DEVDMACONTROL_LDNXT_DSC;
+    //u->UOTGHS_DEVIER = UOTGHS_DEVIER_DMA_1 << (ep - 1);
+    //USBDEBUG("M: %.8x\r\n", dma->UOTGHS_DEVDMASTATUS);
+    //USBDEBUG("M: %.8x\r\n", dma->UOTGHS_DEVDMASTATUS);
+  } else {
+    u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_TXINES;
+    u->UOTGHS_DEVEPTICR[ep] = UOTGHS_DEVEPTICR_TXINIC;
+    if (ep != 0)
+      u->UOTGHS_DEVEPTIDR[ep] = UOTGHS_DEVEPTIDR_FIFOCONC;
+  }
 }
 
 /**
@@ -824,7 +965,7 @@ void usb_lld_start_in(USBDriver *usbp, usbep_t ep) {
 void usb_lld_stall_out(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
   u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_STALLRQS;
-  if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "STALL-O %d\r\n", ep);
+  USBDEBUG("STALL-O %d\r\n", ep);
 }
 
 /**
@@ -838,7 +979,7 @@ void usb_lld_stall_out(USBDriver *usbp, usbep_t ep) {
 void usb_lld_stall_in(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
   u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_STALLRQS;
-  if (USBDEBUG) chprintf((BaseSequentialStream *)&SD1, "STALL-I %d\r\n", ep);
+  USBDEBUG("STALL-I %d\r\n", ep);
 }
 
 /**
@@ -851,7 +992,9 @@ void usb_lld_stall_in(USBDriver *usbp, usbep_t ep) {
  */
 void usb_lld_clear_out(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
+  // Clear stall condition and reset data toggle
   u->UOTGHS_DEVEPTIDR[ep] = UOTGHS_DEVEPTIDR_STALLRQC;
+  u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_RSTDTS;
 }
 
 /**
@@ -864,7 +1007,9 @@ void usb_lld_clear_out(USBDriver *usbp, usbep_t ep) {
  */
 void usb_lld_clear_in(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
+  // Clear stall condition and reset data toggle
   u->UOTGHS_DEVEPTIDR[ep] = UOTGHS_DEVEPTIDR_STALLRQC;
+  u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_RSTDTS;
 }
 
 #endif /* HAL_USE_USB */
