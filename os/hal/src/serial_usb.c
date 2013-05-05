@@ -37,6 +37,11 @@
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
 
+/**
+ * @brief The list of Serial USB driver
+ */
+static SerialUSBDriver *driver_head;
+
 /*===========================================================================*/
 /* Driver exported variables.                                                */
 /*===========================================================================*/
@@ -44,14 +49,6 @@
 /*===========================================================================*/
 /* Driver local variables and types.                                         */
 /*===========================================================================*/
-
-/*
- * Current Line Coding.
- */
-static cdc_linecoding_t linecoding = {
-  {0x00, 0x96, 0x00, 0x00},             /* 38400.                           */
-  LC_STOP_1, LC_PARITY_NONE, 8
-};
 
 /*===========================================================================*/
 /* Driver local functions.                                                   */
@@ -123,18 +120,20 @@ static void inotify(GenericQueue *qp) {
   /* If there is in the queue enough space to hold at least one packet and
      a transaction is not yet started then a new transaction is started for
      the available space.*/
-  maxsize = sdup->config->usbp->epc[USB_CDC_DATA_AVAILABLE_EP]->out_maxsize;
-  if (!usbGetReceiveStatusI(sdup->config->usbp, USB_CDC_DATA_AVAILABLE_EP) &&
+  uint8_t rx_ep = sdup->config->rx_ep ? sdup->config->rx_ep : USB_CDC_DATA_AVAILABLE_EP;
+
+  maxsize = sdup->config->usbp->epc[rx_ep]->out_maxsize;
+  if (!usbGetReceiveStatusI(sdup->config->usbp, rx_ep) &&
       ((n = chIQGetEmptyI(&sdup->iqueue)) >= maxsize)) {
     chSysUnlock();
 
     n = (n / maxsize) * maxsize;
     usbPrepareQueuedReceive(sdup->config->usbp,
-                            USB_CDC_DATA_AVAILABLE_EP,
+                            rx_ep,
                             &sdup->iqueue, n);
 
     chSysLock();
-    usbStartReceiveI(sdup->config->usbp, USB_CDC_DATA_AVAILABLE_EP);
+    usbStartReceiveI(sdup->config->usbp, rx_ep);
   }
 }
 
@@ -150,18 +149,20 @@ static void onotify(GenericQueue *qp) {
   if (usbGetDriverStateI(sdup->config->usbp) != USB_ACTIVE)
     return;
 
+  uint8_t tx_ep = sdup->config->tx_ep ? sdup->config->tx_ep : USB_CDC_DATA_REQUEST_EP;
+
   /* If there is not an ongoing transaction and the output queue contains
      data then a new transaction is started.*/
-  if (!usbGetTransmitStatusI(sdup->config->usbp, USB_CDC_DATA_REQUEST_EP) &&
+  if (!usbGetTransmitStatusI(sdup->config->usbp, tx_ep) &&
       ((n = chOQGetFullI(&sdup->oqueue)) > 0)) {
     chSysUnlock();
 
     usbPrepareQueuedTransmit(sdup->config->usbp,
-                             USB_CDC_DATA_REQUEST_EP,
+                             tx_ep,
                              &sdup->oqueue, n);
 
     chSysLock();
-    usbStartTransmitI(sdup->config->usbp, USB_CDC_DATA_REQUEST_EP);
+    usbStartTransmitI(sdup->config->usbp, tx_ep);
   }
 }
 
@@ -189,10 +190,23 @@ void sduInit(void) {
  * @init
  */
 void sduObjectInit(SerialUSBDriver *sdup) {
+  SerialUSBDriver *dp = driver_head;
+  if (dp == NULL) {
+    driver_head = sdup;
+  } else {
+    while (dp->driver_next != NULL)
+      dp = dp->driver_next;
+    dp->driver_next = sdup;
+  }
+  sdup->driver_next = NULL;
 
   sdup->vmt = &vmt;
   chEvtInit(&sdup->event);
   sdup->state = SDU_STOP;
+  sdup->line_coding = (cdc_linecoding_t) {
+    {0x00, 0x96, 0x00, 0x00}, // 38400
+    LC_STOP_1, LC_PARITY_NONE, 8
+  };
   chIQInit(&sdup->iqueue, sdup->ib, SERIAL_USB_BUFFERS_SIZE, inotify, sdup);
   chOQInit(&sdup->oqueue, sdup->ob, SERIAL_USB_BUFFERS_SIZE, onotify, sdup);
 }
@@ -214,7 +228,6 @@ void sduStart(SerialUSBDriver *sdup, const SerialUSBConfig *config) {
               "sduStart(), #1",
               "invalid state");
   sdup->config = config;
-  config->usbp->param = sdup;
   sdup->state = SDU_READY;
   chSysUnlock();
 }
@@ -248,16 +261,21 @@ void sduStop(SerialUSBDriver *sdup) {
  * @iclass
  */
 void sduConfigureHookI(USBDriver *usbp) {
-  SerialUSBDriver *sdup = usbp->param;
+  SerialUSBDriver *sdup = driver_head;
+  while (sdup != NULL)
+  {
+    chIQResetI(&sdup->iqueue);
+    chOQResetI(&sdup->oqueue);
+    chnAddFlagsI(sdup, CHN_CONNECTED);
 
-  chIQResetI(&sdup->iqueue);
-  chOQResetI(&sdup->oqueue);
-  chnAddFlagsI(sdup, CHN_CONNECTED);
+    uint8_t rx_ep = sdup->config->rx_ep ? sdup->config->rx_ep : USB_CDC_DATA_AVAILABLE_EP;
 
-  /* Starts the first OUT transaction immediately.*/
-  usbPrepareQueuedReceive(usbp, USB_CDC_DATA_AVAILABLE_EP, &sdup->iqueue,
-                          usbp->epc[USB_CDC_DATA_AVAILABLE_EP]->out_maxsize);
-  usbStartReceiveI(usbp, USB_CDC_DATA_AVAILABLE_EP);
+    /* Starts the first OUT transaction immediately.*/
+    usbPrepareQueuedReceive(usbp, rx_ep, &sdup->iqueue, usbp->epc[rx_ep]->out_maxsize);
+    usbStartReceiveI(usbp, rx_ep);
+
+    sdup = sdup->driver_next;
+  }
 }
 
 /**
@@ -276,14 +294,20 @@ void sduConfigureHookI(USBDriver *usbp) {
  * @retval FALSE        Message not handled.
  */
 bool_t sduRequestsHook(USBDriver *usbp) {
-
   if ((usbp->setup[0] & USB_RTYPE_TYPE_MASK) == USB_RTYPE_TYPE_CLASS) {
+    SerialUSBDriver *sdup = driver_head;
+    uint8_t index = usbp->setup[4]; // TODO: wIndex is actually uint16_t in LE
+    while (sdup->driver_next != NULL) {
+      if (sdup->config->control_interface == index) break;
+      sdup = sdup->driver_next;
+    }
+
     switch (usbp->setup[1]) {
     case CDC_GET_LINE_CODING:
-      usbSetupTransfer(usbp, (uint8_t *)&linecoding, sizeof(linecoding), NULL);
+      usbSetupTransfer(usbp, (uint8_t *)&sdup->line_coding, sizeof(sdup->line_coding), NULL);
       return TRUE;
     case CDC_SET_LINE_CODING:
-      usbSetupTransfer(usbp, (uint8_t *)&linecoding, sizeof(linecoding), NULL);
+      usbSetupTransfer(usbp, (uint8_t *)&sdup->line_coding, sizeof(sdup->line_coding), NULL);
       return TRUE;
     case CDC_SET_CONTROL_LINE_STATE:
       /* Nothing to do, there are no control lines.*/
@@ -306,9 +330,11 @@ bool_t sduRequestsHook(USBDriver *usbp) {
  */
 void sduDataTransmitted(USBDriver *usbp, usbep_t ep) {
   size_t n;
-  SerialUSBDriver *sdup = usbp->param;
-
-  (void)ep;
+  SerialUSBDriver *sdup = driver_head;
+  while (sdup->driver_next != NULL) {
+    if (sdup->config->tx_ep == ep) break;
+    sdup = sdup->driver_next;
+  }
 
   chSysLockFromIsr();
   chnAddFlagsI(sdup, CHN_OUTPUT_EMPTY);
@@ -351,16 +377,18 @@ void sduDataTransmitted(USBDriver *usbp, usbep_t ep) {
  */
 void sduDataReceived(USBDriver *usbp, usbep_t ep) {
   size_t n, maxsize;
-  SerialUSBDriver *sdup = usbp->param;
-
-  (void)ep;
+  SerialUSBDriver *sdup = driver_head;
+  while (sdup->driver_next != NULL) {
+    if (sdup->config->rx_ep == ep) break;
+    sdup = sdup->driver_next;
+  }
 
   chSysLockFromIsr();
   chnAddFlagsI(sdup, CHN_INPUT_AVAILABLE);
 
   /* Writes to the input queue can only happen when there is enough space
      to hold at least one packet.*/
-  maxsize = usbp->epc[USB_CDC_DATA_AVAILABLE_EP]->out_maxsize;
+  maxsize = usbp->epc[ep]->out_maxsize;
   if ((n = chIQGetEmptyI(&sdup->iqueue)) >= maxsize) {
     /* The endpoint cannot be busy, we are in the context of the callback,
        so a packet is in the buffer for sure.*/
@@ -385,9 +413,15 @@ void sduDataReceived(USBDriver *usbp, usbep_t ep) {
  * @param[in] ep        endpoint number
  */
 void sduInterruptTransmitted(USBDriver *usbp, usbep_t ep) {
-
   (void)usbp;
   (void)ep;
+  /**
+  SerialUSBDriver *sdup = driver_head;
+  while (sdup->driver_next != NULL) {
+    if (sdup->config->int_ep == ep) break;
+    sdup = sdup->driver_next;
+  }
+  */
 }
 
 #endif /* HAL_USE_SERIAL */

@@ -31,6 +31,8 @@
 
 #if HAL_USE_SERIAL_USB || defined(__DOXYGEN__)
 
+#include "usb_cdc.h"
+
 /*===========================================================================*/
 /* Driver constants.                                                         */
 /*===========================================================================*/
@@ -92,6 +94,31 @@ typedef struct {
    * @brief   USB driver to use.
    */
   USBDriver                 *usbp;
+
+  /**
+   * @brief   Control interface number
+   * @note    Only used in composite USB device.
+   *          Default is 0 which is good for single device.
+   */
+  uint8_t                   control_interface;
+
+  /**
+   * @brief   Interrupt endpoint number
+   * @note    Optional for single serial USB driver operation.
+   */
+  uint8_t                   int_ep;
+
+  /**
+   * @brief   TX endpoint number
+   * @note    Optional for single serial USB driver operation.
+   */
+  uint8_t                   tx_ep;
+
+  /**
+   * @brief   RX endpoint number
+   * @note    Optional for single serial USB driver operation.
+   */
+  uint8_t                   rx_ep;
 } SerialUSBConfig;
 
 /**
@@ -111,7 +138,11 @@ typedef struct {
   uint8_t                   ob[SERIAL_USB_BUFFERS_SIZE];                    \
   /* End of the mandatory fields.*/                                         \
   /* Current configuration data.*/                                          \
-  const SerialUSBConfig     *config;
+  const SerialUSBConfig     *config;                                        \
+  /* Driver line encoding */                                                \
+  cdc_linecoding_t          line_coding;                                    \
+  /* Linked list to the next serial USB driver */                           \
+  SerialUSBDriver           *driver_next;
 
 /**
  * @brief   @p SerialUSBDriver specific methods.
