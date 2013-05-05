@@ -345,7 +345,7 @@ struct USBDriver {
  * @api
  */
 #define usb_lld_connect_bus(usbp) do {                                      \
-  usbp->Uotghs->UOTGHS_DEVCTRL &= ~UOTGHS_DEVCTRL_DETACH;                   \
+  (usbp)->Uotghs->UOTGHS_DEVCTRL &= ~UOTGHS_DEVCTRL_DETACH;                 \
 } while (0)
 
 /**
@@ -354,7 +354,7 @@ struct USBDriver {
  * @api
  */
 #define usb_lld_disconnect_bus(usbp) do {                                   \
-		usbp->Uotghs->UOTGHS_DEVCTRL |= UOTGHS_DEVCTRL_DETACH;                  \
+		(usbp)->Uotghs->UOTGHS_DEVCTRL |= UOTGHS_DEVCTRL_DETACH;            \
 } while (0)
 
 /*===========================================================================*/
