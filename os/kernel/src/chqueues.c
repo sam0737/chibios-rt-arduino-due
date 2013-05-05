@@ -405,24 +405,28 @@ size_t chOQWriteTimeout(OutputQueue *oqp, const uint8_t *bp,
 
   chSysLock();
   while (TRUE) {
-    while (chOQIsFullI(oqp)) {
-      if (qwait((GenericQueue *)oqp, time) != Q_OK) {
-        chSysUnlock();
-        return w;
-      }
+    if (chOQIsFullI(oqp)) {
+      if (nfy && w > 0)
+        nfy(oqp);
+      do {
+        if (qwait((GenericQueue *)oqp, time) != Q_OK) {
+          chSysUnlock();
+          return w;
+        }
+      } while (chOQIsFullI(oqp));
     }
     oqp->q_counter--;
     *oqp->q_wrptr++ = *bp++;
     if (oqp->q_wrptr >= oqp->q_top)
       oqp->q_wrptr = oqp->q_buffer;
 
-    if (nfy)
-      nfy(oqp);
-
     chSysUnlock(); /* Gives a preemption chance in a controlled point.*/
     w++;
-    if (--n == 0)
+    if (--n == 0) {
+      if (nfy)
+        nfy(oqp);
       return w;
+    }
     chSysLock();
   }
 }
