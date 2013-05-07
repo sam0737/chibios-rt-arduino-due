@@ -42,6 +42,11 @@
  */
 static SerialUSBDriver *driver_head;
 
+/**
+ * @brief The driver being setup
+ */
+static SerialUSBDriver *driver_setup;
+
 /*===========================================================================*/
 /* Driver exported variables.                                                */
 /*===========================================================================*/
@@ -164,6 +169,16 @@ static void onotify(GenericQueue *qp) {
     chSysLock();
     usbStartTransmitI(sdup->config->usbp, tx_ep);
   }
+}
+
+/**
+ * @brief The callback line coding receive completion
+ */
+static void line_coding_set(USBDriver *usbp)
+{
+  (void)usbp;
+  if (driver_setup->config->linecoding_cb)
+    driver_setup->config->linecoding_cb(driver_setup);
 }
 
 /*===========================================================================*/
@@ -302,15 +317,19 @@ bool_t sduRequestsHook(USBDriver *usbp) {
       sdup = sdup->driver_next;
     }
 
+    driver_setup = sdup;
+
     switch (usbp->setup[1]) {
     case CDC_GET_LINE_CODING:
       usbSetupTransfer(usbp, (uint8_t *)&sdup->line_coding, sizeof(sdup->line_coding), NULL);
       return TRUE;
     case CDC_SET_LINE_CODING:
-      usbSetupTransfer(usbp, (uint8_t *)&sdup->line_coding, sizeof(sdup->line_coding), NULL);
+      usbSetupTransfer(usbp, (uint8_t *)&sdup->line_coding, sizeof(sdup->line_coding), line_coding_set);
       return TRUE;
     case CDC_SET_CONTROL_LINE_STATE:
-      /* Nothing to do, there are no control lines.*/
+      sdup->control_line_state = usbp->setup[2]; // wValueL
+      if (sdup->config->controllinestate_cb)
+        sdup->config->controllinestate_cb(sdup);
       usbSetupTransfer(usbp, NULL, 0, NULL);
       return TRUE;
     default:

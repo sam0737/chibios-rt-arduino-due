@@ -85,6 +85,14 @@ typedef enum {
 typedef struct SerialUSBDriver SerialUSBDriver;
 
 /**
+ * @brief   Type of an Serial USB event callback.
+ *
+ * @param[in] sdup      pointer to the @p SerialUSBDriver object triggering the
+ *                      callback
+ */
+typedef void (*sdueventcallback_t)(SerialUSBDriver *sdup);
+
+/**
  * @brief   Serial over USB Driver configuration structure.
  * @details An instance of this structure must be passed to @p sduStart()
  *          in order to configure and start the driver operations.
@@ -119,6 +127,16 @@ typedef struct {
    * @note    Optional for single serial USB driver operation.
    */
   uint8_t                   rx_ep;
+
+  /**
+   * @brief   Line coding, control line state set event callback
+   */
+  sdueventcallback_t        linecoding_cb;
+
+  /**
+   * @brief   Line coding, control line state set event callback
+   */
+  sdueventcallback_t        controllinestate_cb;
 } SerialUSBConfig;
 
 /**
@@ -141,6 +159,8 @@ typedef struct {
   const SerialUSBConfig     *config;                                        \
   /* Driver line encoding */                                                \
   cdc_linecoding_t          line_coding;                                    \
+  /* Control line state */                                                  \
+  uint8_t                   control_line_state;                             \
   /* Linked list to the next serial USB driver */                           \
   SerialUSBDriver           *driver_next;
 
@@ -175,6 +195,16 @@ struct SerialUSBDriver {
 /*===========================================================================*/
 /* Driver macros.                                                            */
 /*===========================================================================*/
+
+/**
+ * @brief Control line state DTR (Data terminal ready) bit
+ */
+#define USB_SERIAL_DTR      0x01
+
+/**
+ * @brief Control line state RTS (Ready to send) bit
+ */
+#define USB_SERIAL_RTS      0x02
 
 /*===========================================================================*/
 /* External declarations.                                                    */
