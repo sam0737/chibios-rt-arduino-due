@@ -54,6 +54,9 @@ void peripheral_pin_apply(const PeripheralPinConfig *config)
  */
 void peripheral_pin_reset(const PeripheralPinConfig *config)
 {
+  if (config->port == 0)
+    return;
+
   config->port->PIO_PER = 1 << config->pin;
 }
 
