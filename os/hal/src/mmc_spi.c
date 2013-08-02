@@ -157,7 +157,6 @@ static uint8_t crc7(uint8_t crc, const uint8_t *buffer, size_t len) {
 static void wait(MMCDriver *mmcp) {
   int i;
   uint8_t buf[4];
-
   for (i = 0; i < 16; i++) {
     spiReceive(mmcp->config->spip, 1, buf);
     if (buf[0] == 0xFF)
@@ -214,7 +213,7 @@ static uint8_t recvr1(MMCDriver *mmcp) {
   int i;
   uint8_t r1[1];
 
-  for (i = 0; i < 9; i++) {
+  for (i = 0; i < 20; i++) {
     spiReceive(mmcp->config->spip, 1, r1);
     if (r1[0] != 0xFF)
       return r1[0];
@@ -489,19 +488,20 @@ bool_t mmcConnect(MMCDriver *mmcp) {
     /* Check if CCS is set in response. Card operates in block mode if set.*/
     if (r3[0] & 0x40)
       mmcp->block_addresses = TRUE;
-  }
-
-  /* Initialization.*/
-  i = 0;
-  while (TRUE) {
-    uint8_t b = send_command_R1(mmcp, MMCSD_CMD_INIT, 0);
-    if (b == 0x00)
-      break;
-    if (b != 0x01)
-      goto failed;
-    if (++i >= MMC_CMD1_RETRY)
-      goto failed;
-    chThdSleepMilliseconds(10);
+  } else
+  {
+    /* Initialization.*/
+    i = 0;
+    while (TRUE) {
+      uint8_t b = send_command_R1(mmcp, MMCSD_CMD_INIT, 0);
+      if (b == 0x00)
+        break;
+      if (b != 0x01)
+        goto failed;
+      if (++i >= MMC_CMD1_RETRY)
+        goto failed;
+      chThdSleepMilliseconds(10);
+    }
   }
 
   /* Initialization complete, full speed.*/
