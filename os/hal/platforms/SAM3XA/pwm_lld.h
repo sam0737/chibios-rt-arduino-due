@@ -132,7 +132,7 @@
  * @brief   PWM interrupt priority level setting
  */
 #if !defined(SAM3XA_PWM_DEFAULT_IRQ_PRIORITY) || defined(__DOXYGEN__)
-#define SAM3XA_PWM_IRQ_PRIORITY             12
+#define SAM3XA_PWM_DEFAULT_IRQ_PRIORITY             12
 #endif
 /** @} */
 
@@ -140,7 +140,7 @@
 /* Configuration checks.                                                     */
 /*===========================================================================*/
 
-#if !CORTEX_IS_VALID_KERNEL_PRIORITY(SAM3XA_PWM_IRQ_PRIORITY)
+#if !CORTEX_IS_VALID_KERNEL_PRIORITY(SAM3XA_PWM_DEFAULT_IRQ_PRIORITY)
 #error "Invalid IRQ priority assigned to PWM"
 #endif
 

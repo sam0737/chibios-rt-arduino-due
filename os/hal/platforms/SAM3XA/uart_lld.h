@@ -266,12 +266,12 @@ struct UARTDriver {
   /**
    * @brief The peripheral id of the UART/USART device
    */
-  uint32_t                  peripheral_id;
+  uint8_t                   peripheral_id;
 
   /**
    * @brief The IRQ id of the UART/USART device
    */
-  uint32_t                  irq_id;
+  uint8_t                   irq_id;
 
   /**
    * @brief Determine if this is an USART or UART device

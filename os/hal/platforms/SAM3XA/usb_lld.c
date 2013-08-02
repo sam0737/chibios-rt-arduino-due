@@ -26,7 +26,7 @@
 #include "hal.h"
 #include "chprintf.h"
 
-#if 0
+#if 1
 static volatile uint32_t g_x = 0;
 #define USBDEBUG(...) do {\
 	chprintf((BaseSequentialStream *)&SD1, "%d", g_x++); \
@@ -166,11 +166,11 @@ static void usb_packet_write_from_buffer(USBDriver *usbp, uint8_t ep,
   {
     uint8_t *p = (uint8_t*)&get_endpoint_fifo_access8(ep);
     while (n > 0) {
-      USBDEBUG("%.2x", *buf);
+      //USBDEBUG("%.2x", *buf);
       *p++ = *buf++;
       n--;
     }
-    USBDEBUG("\r\n");
+    //USBDEBUG("\r\n");
   }
 }
 
@@ -261,10 +261,10 @@ static void usb_packet_read_to_buffer(USBDriver *usbp, uint8_t ep,
   uint8_t *p = (uint8_t*)&get_endpoint_fifo_access8(ep);
   while (n > 0) {
     uint8_t c = *buf++ = *p++;
-    USBDEBUG("%.2x", c);
+    //USBDEBUG("%.2x", c);
     n--;
   }
-  USBDEBUG("\r\n");
+  //USBDEBUG("\r\n");
 }
 
 /**
@@ -283,12 +283,12 @@ static void usb_packet_read_to_queue(USBDriver *usbp, uint8_t ep,
   size_t nb = n;
   while (n > 0) {
     uint8_t c = *iqp->q_wrptr++ = *p++;
-    USBDEBUG("%.2x", c);
+    //USBDEBUG("%.2x", c);
     if (iqp->q_wrptr >= iqp->q_top)
       iqp->q_wrptr = iqp->q_buffer;
     n--;
   }
-  USBDEBUG("\r\n");
+  //USBDEBUG("\r\n");
 
   /* Updating queue.*/
   chSysLockFromIsr();
@@ -402,7 +402,7 @@ static void serve_usb_ep_irq(USBDriver *usbp, usbep_t ep) {
   {
     USBInEndpointState *isp = usbp->epc[ep]->in_state;
 
-    USBDEBUG("TX %d>%d %d\r\n", ep, isp->txcnt, isp->txsize);
+    //USBDEBUG("TX %d>%d %d\r\n", ep, isp->txcnt, isp->txsize);
     if (isp->txcnt < isp->txsize)
     {
       usb_lld_prepare_transmit(usbp, ep);
@@ -428,7 +428,7 @@ static void serve_usb_ep_irq(USBDriver *usbp, usbep_t ep) {
         >> UOTGHS_DEVEPTISR_BYCT_Pos;
     osp->rxcnt += n;
 
-    USBDEBUG("RX %d>%d %d\r\n", ep, osp->rxcnt, osp->rxsize);
+    //USBDEBUG("RX %d>%d %d\r\n", ep, osp->rxcnt, osp->rxsize);
     if (epcp->out_state->rxqueued) {
       usb_packet_read_to_queue(usbp, ep,
                                epcp->out_state->mode.queue.rxqueue,
@@ -877,7 +877,7 @@ void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep) {
   // Use DMA? rxsize > 0. Supported channel.
   USBOutEndpointState *osp = usbp->epc[ep]->out_state;
 
-  USBDEBUG("PR %d>%d\r\n", ep, osp->rxsize);
+  //USBDEBUG("PR %d>%d\r\n", ep, osp->rxsize);
 }
 
 /**
@@ -901,7 +901,7 @@ void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep) {
     n = n_max;
   isp->txcnt += n;
 
-  USBDEBUG("PT %d>%d\r\n", ep ,n);
+  //USBDEBUG("PT %d>%d\r\n", ep ,n);
 
   if (isp->txqueued)
     usb_packet_write_from_queue(usbp, ep,
@@ -924,7 +924,7 @@ void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep) {
 void usb_lld_start_out(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
   u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_RXOUTES;
-  //USBDEBUG("S OUT %d\r\n", ep);
+  //USBDEBUG(" R %d\r\n", ep);
 }
 
 /**
@@ -937,6 +937,7 @@ void usb_lld_start_out(USBDriver *usbp, usbep_t ep) {
  */
 void usb_lld_start_in(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
+  //USBDEBUG(" T %d\r\n", ep);
   if (is_dma_ep(ep)) {
     //toggle_rx();
     //USBDEBUG("MEOW");
@@ -964,7 +965,7 @@ void usb_lld_start_in(USBDriver *usbp, usbep_t ep) {
  */
 void usb_lld_stall_out(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
-  u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_STALLRQS;
+  u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_STALLRQS | UOTGHS_DEVEPTIER_RSTDTS;
   USBDEBUG("STALL-O %d\r\n", ep);
 }
 
@@ -978,7 +979,7 @@ void usb_lld_stall_out(USBDriver *usbp, usbep_t ep) {
  */
 void usb_lld_stall_in(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
-  u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_STALLRQS;
+  u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_STALLRQS | UOTGHS_DEVEPTIER_RSTDTS;
   USBDEBUG("STALL-I %d\r\n", ep);
 }
 
@@ -994,7 +995,6 @@ void usb_lld_clear_out(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
   // Clear stall condition and reset data toggle
   u->UOTGHS_DEVEPTIDR[ep] = UOTGHS_DEVEPTIDR_STALLRQC;
-  u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_RSTDTS;
 }
 
 /**
@@ -1009,7 +1009,6 @@ void usb_lld_clear_in(USBDriver *usbp, usbep_t ep) {
   Uotghs* u = usbp->Uotghs;
   // Clear stall condition and reset data toggle
   u->UOTGHS_DEVEPTIDR[ep] = UOTGHS_DEVEPTIDR_STALLRQC;
-  u->UOTGHS_DEVEPTIER[ep] = UOTGHS_DEVEPTIER_RSTDTS;
 }
 
 #endif /* HAL_USE_USB */

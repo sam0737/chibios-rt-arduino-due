@@ -86,26 +86,28 @@ void _pal_lld_setgroupmode(ioportid_t port, ioportmask_t mask, iomode_t mode)
 	case PAL_MODE_RESET:
 	case PAL_MODE_UNCONNECTED:
 	case PAL_MODE_INPUT_PULLUP:
-		(port)->PIO_ODR = mask;		// Output disabled
+    (port)->PIO_ODR = mask;   // Output disabled
 		(port)->PIO_PUER = mask;	// Pull-up enabled
+    (port)->PIO_MDER = mask;  // Open-drain enabled
 		break;
 
 	case PAL_MODE_INPUT_ANALOG:
 	case PAL_MODE_INPUT:
 		(port)->PIO_ODR = mask;		// Output disabled
 		(port)->PIO_PUDR = mask;	// Pull-up disabled
+    (port)->PIO_MDDR = mask;  // Open-drain disabled
 		break;
 
 	case PAL_MODE_OUTPUT_PUSHPULL:
 		(port)->PIO_OER = mask;		// Output enabled
-		(port)->PIO_MDDR = mask;	// Open-drain disabled
 		(port)->PIO_PUDR = mask;	// Pull-up disabled
+    (port)->PIO_MDDR = mask;  // Open-drain disabled
 		break;
 
 	case PAL_MODE_OUTPUT_OPENDRAIN:
-		(port)->PIO_MDER = mask;	// Open-drain enabled
 		(port)->PIO_OER = mask;		// Output enabled
-		(port)->PIO_PUDR = mask;	// Pull-up Disabled
+		(port)->PIO_PUER = mask;	// Pull-up enabled
+    (port)->PIO_MDER = mask;  // Open-drain enabled
 		break;
 	}
 }

@@ -40,11 +40,13 @@
 /* Clock settings (12MHz crystal to 84MHz) */
 #ifndef SYS_BOARD_OSCOUNT
 #define SYS_BOARD_OSCOUNT   (CKGR_MOR_MOSCXTST(0x8))
+// PLLA = 168Mhz
 #define SYS_BOARD_PLLAR     (CKGR_PLLAR_ONE \
                             | CKGR_PLLAR_MULA(0xdUL) \
                             | CKGR_PLLAR_PLLACOUNT(0x3fUL) \
                             | CKGR_PLLAR_DIVA(0x1UL))
 #define SYS_BOARD_MCKR      (PMC_MCKR_PRES_CLK_2 | PMC_MCKR_CSS_PLLA_CLK)
+#define SYS_BOARD_FINAL_FREQ    (84000000UL)
 #endif
 
 /* Clock Definitions */
@@ -114,7 +116,7 @@ static void SystemInit(void)
 	while (!(PMC->PMC_SR & PMC_SR_MCKRDY)) {
 	}
 
-	SystemCoreClock = CHIP_FREQ_CPU_MAX;
+	SystemCoreClock = SYS_BOARD_FINAL_FREQ;
 }
 
 /*===========================================================================*/
