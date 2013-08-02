@@ -130,7 +130,11 @@ void adc_lld_start(ADCDriver *adcp) {
         ADC_MR_SLEEP_NORMAL |
         ADC_MR_LOWRES_BITS_12 |
         ADC_MR_USEQ_NUM_ORDER |
-        ADC_MR_TRGEN_DIS;
+        ADC_MR_TRGEN_DIS |
+        (adcp->config->use_sequence ? ADC_MR_USEQ_REG_ORDER : 0);
+
+    ADC->ADC_SEQR1 = adcp->config->sequence1;
+    ADC->ADC_SEQR2 = adcp->config->sequence2;
 
     // Enable Temp sensor on CH15
     ADC->ADC_ACR = ADC_ACR_TSON;

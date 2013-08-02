@@ -162,6 +162,19 @@ typedef struct {
    * Please refer to the datasheet for track and transfer requirement.
    */
   uint32_t                  clock;
+
+  /**
+   * @brief Optionally use custom ADC sequence (ADC_MR_USEQ)
+   */
+  uint8_t                   use_sequence:1;
+  /**
+   * @brief Optionally specify the ADC sequence (ADC_SEQR1)
+   */
+  uint32_t                  sequence1;
+  /**
+   * @brief Optionally specify the ADC sequence (ADC_SEQR2)
+   */
+  uint32_t                  sequence2;
 } ADCConfig;
 
 /**
