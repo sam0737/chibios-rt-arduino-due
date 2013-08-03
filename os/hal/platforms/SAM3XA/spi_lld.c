@@ -31,6 +31,12 @@
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
 
+#if SAM3XA_USB_USE_DMAC
+#define IS_USE_DMA(spip) (spip->config->use_dma)
+#else
+#define IS_USE_DMA(spip) (0)
+#endif
+
 /*===========================================================================*/
 /* Driver exported variables.                                                */
 /*===========================================================================*/
@@ -42,7 +48,11 @@
 SPIDriver SPID1 = {
     .peripheral_id = ID_SPI0,
     .irq_id = SPI0_IRQn,
-    .spi = SPI0
+    .spi = SPI0,
+#if SAM3XA_USB_USE_DMAC
+    .dma_tx_per = 1,
+    .dma_rx_per = 2
+#endif
 };
 #endif
 
@@ -72,6 +82,11 @@ void serve_spi_irq(SPIDriver *spip) {
   }
 }
 
+void serve_spi_dma(uint8_t ch, void *state)
+{
+  _spi_isr_code((SPIDriver*)state);
+}
+
 /*===========================================================================*/
 /* Driver interrupt handlers.                                                */
 /*===========================================================================*/
@@ -79,7 +94,6 @@ void serve_spi_irq(SPIDriver *spip) {
 #if SAM3XA_SPI_USE_SPI1
 CH_IRQ_HANDLER(SAM3XA_SPI0_HANDLER) {
   CH_IRQ_PROLOGUE();
-  toggle_tx();
   serve_spi_irq(&SPID1);
   CH_IRQ_EPILOGUE();
 }
@@ -209,11 +223,23 @@ void spi_lld_unselect(SPIDriver *spip) {
  * @notapi
  */
 void spi_lld_ignore(SPIDriver *spip, size_t n) {
+#if SAM3XA_USB_USE_DMAC
+  if (IS_USE_DMA(spip)) {
+    dmac_prepare_receive_dummy(spip->config->dma_rx_ch, spip->dma_rx_per,
+        serve_spi_dma, spip,
+        n, &spip->spi->SPI_RDR);
+    dmac_prepare_send_dummy(spip->config->dma_tx_ch, spip->dma_tx_per,
+        NULL, NULL,
+        n, 0xFF, &spip->spi->SPI_TDR);
+    dmac_channel_start(spip->config->dma_rx_ch);
+    dmac_channel_start(spip->config->dma_tx_ch);
+    return;
+  }
+#endif
   spip->size = n;
   spip->tx_buf = 0;
   spip->rx_buf = 0;
 
-  spip->spi->SPI_CR = SPI_CR_SPIEN;
   spip->spi->SPI_IER = SPI_IER_RDRF;
   spip->spi->SPI_TDR = 0xFFFF;
 }
@@ -235,11 +261,23 @@ void spi_lld_ignore(SPIDriver *spip, size_t n) {
  */
 void spi_lld_exchange(SPIDriver *spip, size_t n,
                       const void *txbuf, void *rxbuf) {
+#if SAM3XA_USB_USE_DMAC
+  if (IS_USE_DMA(spip)) {
+    dmac_prepare_receive(spip->config->dma_rx_ch, spip->dma_rx_per,
+        serve_spi_dma, spip,
+        n, rxbuf, &spip->spi->SPI_RDR);
+    dmac_prepare_send(spip->config->dma_tx_ch, spip->dma_tx_per,
+        NULL, NULL,
+        n, txbuf, &spip->spi->SPI_TDR);
+    dmac_channel_start(spip->config->dma_rx_ch);
+    dmac_channel_start(spip->config->dma_tx_ch);
+    return;
+  }
+#endif
   spip->size = n;
   spip->rx_buf = rxbuf;
   spip->tx_buf = (void*)txbuf;
 
-  spip->spi->SPI_CR = SPI_CR_SPIEN;
   spip->spi->SPI_IER = SPI_IER_RDRF;
   spip->spi->SPI_TDR = *(uint8_t*)txbuf;
 }
@@ -258,11 +296,23 @@ void spi_lld_exchange(SPIDriver *spip, size_t n,
  * @notapi
  */
 void spi_lld_send(SPIDriver *spip, size_t n, const void *txbuf) {
+#if SAM3XA_USB_USE_DMAC
+  if (IS_USE_DMA(spip)) {
+    dmac_prepare_receive_dummy(spip->config->dma_rx_ch, spip->dma_rx_per,
+        serve_spi_dma, spip,
+        n, &spip->spi->SPI_RDR);
+    dmac_prepare_send(spip->config->dma_tx_ch, spip->dma_tx_per,
+        NULL, NULL,
+        n, txbuf, &spip->spi->SPI_TDR);
+    dmac_channel_start(spip->config->dma_rx_ch);
+    dmac_channel_start(spip->config->dma_tx_ch);
+    return;
+  }
+#endif
   spip->size = n;
   spip->rx_buf = 0;
   spip->tx_buf = (void*)txbuf;
 
-  spip->spi->SPI_CR = SPI_CR_SPIEN;
   spip->spi->SPI_IER = SPI_IER_RDRF;
   spip->spi->SPI_TDR = *(uint8_t*)txbuf;
 }
@@ -280,12 +330,25 @@ void spi_lld_send(SPIDriver *spip, size_t n, const void *txbuf) {
  *
  * @notapi
  */
+
 void spi_lld_receive(SPIDriver *spip, size_t n, void *rxbuf) {
+#if SAM3XA_USB_USE_DMAC
+  if (IS_USE_DMA(spip) && 0) {
+    dmac_prepare_receive(spip->config->dma_rx_ch, spip->dma_rx_per,
+        serve_spi_dma, spip,
+        n, rxbuf, &spip->spi->SPI_RDR);
+    dmac_prepare_send_dummy(spip->config->dma_tx_ch, spip->dma_tx_per,
+        NULL, NULL,
+        n, 0xFF, &spip->spi->SPI_TDR);
+    dmac_channel_start(spip->config->dma_rx_ch);
+    dmac_channel_start(spip->config->dma_tx_ch);
+    return;
+  }
+#endif
   spip->size = n;
   spip->rx_buf = rxbuf;
   spip->tx_buf = 0;
 
-  spip->spi->SPI_CR = SPI_CR_SPIEN;
   spip->spi->SPI_IER = SPI_IER_RDRF;
   spip->spi->SPI_TDR = 0xFFFF;
 }
@@ -306,7 +369,6 @@ uint16_t spi_lld_polled_exchange(SPIDriver *spip, uint16_t frame) {
   spip->spi->SPI_CR = SPI_CR_SPIEN;
   spip->spi->SPI_TDR = frame;
   while (!(spip->spi->SPI_SR & SPI_SR_RDRF));
-  //spip->spi->SPI_CR = SPI_CR_SPIDIS;
   return spip->spi->SPI_RDR;
 }
 

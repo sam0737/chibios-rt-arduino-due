@@ -39,6 +39,7 @@
 #include "peripheral_config.h"
 #include "pdc.h"
 #include "pmc.h"
+#include "dmac.h"
 
 #endif /* _SAM3XA_COMMON_ */
 

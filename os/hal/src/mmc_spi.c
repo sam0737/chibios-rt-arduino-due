@@ -654,7 +654,8 @@ bool_t mmcSequentialRead(MMCDriver *mmcp, uint8_t *buffer) {
  * @api
  */
 bool_t mmcStopSequentialRead(MMCDriver *mmcp) {
-  static const uint8_t stopcmd[] = {0x40 | MMCSD_CMD_STOP_TRANSMISSION,
+  // no const, because it doesn't work for DMA
+  static uint8_t stopcmd[] = {0x40 | MMCSD_CMD_STOP_TRANSMISSION,
                                     0, 0, 0, 0, 1, 0xFF};
 
   chDbgCheck(mmcp != NULL, "mmcStopSequentialRead");
@@ -723,7 +724,8 @@ bool_t mmcStartSequentialWrite(MMCDriver *mmcp, uint32_t startblk) {
  * @api
  */
 bool_t mmcSequentialWrite(MMCDriver *mmcp, const uint8_t *buffer) {
-  static const uint8_t start[] = {0xFF, 0xFC};
+  // no const, because it doesn't work for DMA
+  static uint8_t start[] = {0xFF, 0xFC};
   uint8_t b[1];
 
   chDbgCheck((mmcp != NULL) && (buffer != NULL), "mmcSequentialWrite");
@@ -759,7 +761,8 @@ bool_t mmcSequentialWrite(MMCDriver *mmcp, const uint8_t *buffer) {
  * @api
  */
 bool_t mmcStopSequentialWrite(MMCDriver *mmcp) {
-  static const uint8_t stop[] = {0xFD, 0xFF};
+  // no const, because it doesn't work for DMA
+  static uint8_t stop[] = {0xFD, 0xFF};
 
   chDbgCheck(mmcp != NULL, "mmcStopSequentialWrite");
 

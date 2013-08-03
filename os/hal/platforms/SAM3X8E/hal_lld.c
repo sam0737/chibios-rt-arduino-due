@@ -37,6 +37,10 @@
 
 #include "sam3x8e.h"
 
+#if SAM3XA_USB_USE_DMAC
+#include "dmac.h"
+#endif
+
 /* Clock settings (12MHz crystal to 84MHz) */
 #ifndef SYS_BOARD_OSCOUNT
 #define SYS_BOARD_OSCOUNT   (CKGR_MOR_MOSCXTST(0x8))
@@ -134,6 +138,9 @@ static void SystemInit(void)
  */
 void hal_lld_init(void) {
 	SysTick_Config(SystemCoreClock / CH_FREQUENCY);
+#if SAM3XA_USB_USE_DMAC
+	dmac_lld_init();
+#endif
 }
 
 void sam3x8e_clock_init(void) {

@@ -87,7 +87,7 @@ typedef struct {
    */
   spicallback_t         end_cb;
   /* End of the mandatory fields.*/
-  uint8_t                   spi_mode:2;
+  uint8_t               spi_mode:2;
   /**
    * @brief IRQ priority. If not set, a default will be assigned.
    */
@@ -98,6 +98,11 @@ typedef struct {
   PeripheralPinConfig       mosi_pin;
   PeripheralPinConfig       cs_pin;
   // TODO: Support for using builtin NPCS pin
+#if SAM3XA_USB_USE_DMAC
+  bool_t                    use_dma;
+  uint8_t                   dma_tx_ch;
+  uint8_t                   dma_rx_ch;
+#endif
 } SPIConfig;
 
 /**
@@ -143,6 +148,11 @@ struct SPIDriver {
    * @brief The IRQ id of the SPI device
    */
   uint8_t                   irq_id;
+
+#if SAM3XA_USB_USE_DMAC
+  uint8_t                   dma_tx_per;
+  uint8_t                   dma_rx_per;
+#endif
 
   /**
    * @brief Pointer to the SPI registers block.
