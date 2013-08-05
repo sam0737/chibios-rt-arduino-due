@@ -214,6 +214,10 @@ void pwm_lld_init(void) {
 #if SAM3XA_PWM_USE_CH7
   pwmObjectInit(&PWMD8);
 #endif
+
+  // Enable clock and interrupt vector
+  pmc_enable_peripheral_clock(ID_PWM);
+  nvicEnableVector(PWM_IRQn, CORTEX_PRIORITY_MASK(SAM3XA_PWM_DEFAULT_IRQ_PRIORITY));
 }
 
 /**
@@ -228,10 +232,6 @@ void pwm_lld_init(void) {
 void pwm_lld_start(PWMDriver *pwmp) {
   uint32_t psc;
   uint8_t psc_bits;
-
-  // Enable clock and interrupt vector
-  pmc_enable_peripheral_clock(ID_PWM);
-  nvicEnableVector(PWM_IRQn, CORTEX_PRIORITY_MASK(SAM3XA_PWM_DEFAULT_IRQ_PRIORITY));
 
   // Disable the channel
   pwmp->pwm->PWM_DIS = 1 << pwmp->channel_id;
