@@ -158,6 +158,7 @@ GPTDriver GPTD9 = {
  */
 static void gpt_lld_serve_interrupt(GPTDriver *gptp) {
   uint32_t status = gptp->channel->TC_SR;
+  (void)status;
   if (gptp->state == GPT_ONESHOT) {
     gptp->state = GPT_READY;                /* Back in GPT_READY state.     */
     // Timer is stopped by hardware RC comparison
@@ -343,7 +344,7 @@ void gpt_lld_init(void) {
  * @notapi
  */
 void gpt_lld_start(GPTDriver *gptp) {
-  uint32_t clks;
+  uint32_t clks = TC_CMR_TCCLKS_TIMER_CLOCK5;
   pmc_enable_peripheral_clock(gptp->peripheral_id);
 
   uint32_t irq_priority =

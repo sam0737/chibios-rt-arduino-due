@@ -92,7 +92,7 @@ CH_IRQ_HANDLER(SAM3XA_ADC_HANDLER) {
  * @notapi
  */
 void adc_lld_init(void) {
-#if PLATFORM_ADC_USE_ADC1
+#if SAM3XA_ADC_USE_ADC1
   /* Driver initialization.*/
   adcObjectInit(&ADCD1);
 #endif /* PLATFORM_ADC_USE_ADC1 */

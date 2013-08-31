@@ -47,7 +47,7 @@ typedef struct DmaChannelConfig DmaChannelConfig;
 
 struct DmaChannelConfig {
   dmacallback_t callback;
-  void* state;
+  const void* state;
   uint32_t dummy;
 };
 
@@ -96,8 +96,8 @@ void dmac_prepare_send(uint8_t ch, uint8_t per, dmacallback_t callback, const vo
   config->state = state;
 
   DmacCh_num* c = &DMAC->DMAC_CH_NUM[ch];
-  c->DMAC_SADDR = buf;
-  c->DMAC_DADDR = destination;
+  c->DMAC_SADDR = (uint32_t)buf;
+  c->DMAC_DADDR = (uint32_t)destination;
   c->DMAC_DSCR = 0;
   c->DMAC_CTRLA = DMAC_CTRLA_DST_WIDTH_BYTE | DMAC_CTRLA_SRC_WIDTH_BYTE |
       DMAC_CTRLA_BTSIZE(size);
@@ -118,8 +118,8 @@ void dmac_prepare_send_dummy(uint8_t ch, uint8_t per, dmacallback_t callback, co
   config->dummy = dummy;
 
   DmacCh_num* c = &DMAC->DMAC_CH_NUM[ch];
-  c->DMAC_SADDR = &config->dummy;
-  c->DMAC_DADDR = destination;
+  c->DMAC_SADDR = (uint32_t)&config->dummy;
+  c->DMAC_DADDR = (uint32_t)destination;
   c->DMAC_DSCR = 0;
   c->DMAC_CTRLA = DMAC_CTRLA_DST_WIDTH_BYTE | DMAC_CTRLA_SRC_WIDTH_BYTE |
       DMAC_CTRLA_BTSIZE(size);
@@ -139,8 +139,8 @@ void dmac_prepare_receive(uint8_t ch, uint8_t per, dmacallback_t callback, const
   config->state = state;
 
   DmacCh_num* c = &DMAC->DMAC_CH_NUM[ch];
-  c->DMAC_SADDR = source;
-  c->DMAC_DADDR = buf;
+  c->DMAC_SADDR = (uint32_t)source;
+  c->DMAC_DADDR = (uint32_t)buf;
   c->DMAC_DSCR = 0;
   c->DMAC_CTRLA = DMAC_CTRLA_DST_WIDTH_BYTE | DMAC_CTRLA_SRC_WIDTH_BYTE |
       DMAC_CTRLA_BTSIZE(size);
@@ -160,8 +160,8 @@ void dmac_prepare_receive_dummy(uint8_t ch, uint8_t per, dmacallback_t callback,
   config->state = state;
 
   DmacCh_num* c = &DMAC->DMAC_CH_NUM[ch];
-  c->DMAC_SADDR = source;
-  c->DMAC_DADDR = &config->dummy;
+  c->DMAC_SADDR = (uint32_t)source;
+  c->DMAC_DADDR = (uint32_t)&config->dummy;
   c->DMAC_DSCR = 0;
   c->DMAC_CTRLA = DMAC_CTRLA_DST_WIDTH_BYTE | DMAC_CTRLA_SRC_WIDTH_BYTE |
       DMAC_CTRLA_BTSIZE(size);

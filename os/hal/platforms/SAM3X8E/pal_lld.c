@@ -77,6 +77,11 @@ void _pal_lld_init(const PALConfig *config)
 	PIOC->PIO_OWER = 0xffffffff;
 	PIOD->PIO_PER = 0xffffffff;
 	PIOD->PIO_OWER = 0xffffffff;
+
+  pmc_enable_peripheral_clock(ID_PIOA);
+  pmc_enable_peripheral_clock(ID_PIOB);
+  pmc_enable_peripheral_clock(ID_PIOC);
+  pmc_enable_peripheral_clock(ID_PIOD);
 }
 
 void _pal_lld_setgroupmode(ioportid_t port, ioportmask_t mask, iomode_t mode)

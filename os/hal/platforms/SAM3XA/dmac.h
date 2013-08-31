@@ -73,7 +73,7 @@
  * @param[in] ch        DMA channel number
  * @param[in] state     state pointer stored in prepare call
  */
-typedef void (*dmacallback_t)(uint8_t ch, void *state);
+typedef void (*dmacallback_t)(uint8_t ch, const void *state);
 
 /*===========================================================================*/
 /* External declarations.                                                    */

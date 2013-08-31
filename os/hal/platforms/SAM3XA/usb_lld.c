@@ -26,7 +26,7 @@
 #include "hal.h"
 #include "chprintf.h"
 
-#if 1
+#if 0
 static volatile uint32_t g_x = 0;
 #define USBDEBUG(...) do {\
 	chprintf((BaseSequentialStream *)&SD1, "%d", g_x++); \
@@ -151,6 +151,7 @@ static const USBEndpointConfig ep0config = {
 static void usb_packet_write_from_buffer(USBDriver *usbp, uint8_t ep,
                                          const uint8_t *buf,
                                          size_t n) {
+  (void) usbp;
   if (is_dma_ep(ep))
   {
     UotghsDevdma *dma = &dma_desc[ep - DEVDMA_BASE][0];
@@ -186,7 +187,7 @@ static void usb_packet_write_from_buffer(USBDriver *usbp, uint8_t ep,
  */
 static void usb_packet_write_from_queue(USBDriver *usbp, uint8_t ep,
                                         OutputQueue *oqp, size_t n) {
-  (void*) usbp;
+  (void) usbp;
   size_t nb = n;
   if (is_dma_ep(ep)) {
     if (oqp->q_rdptr + n <= oqp->q_top)
@@ -257,10 +258,10 @@ static void usb_packet_write_from_queue(USBDriver *usbp, uint8_t ep,
  */
 static void usb_packet_read_to_buffer(USBDriver *usbp, uint8_t ep,
                                       uint8_t *buf, size_t n) {
-  (USBDriver) *usbp;
+  (void) usbp;
   uint8_t *p = (uint8_t*)&get_endpoint_fifo_access8(ep);
   while (n > 0) {
-    uint8_t c = *buf++ = *p++;
+    *buf++ = *p++;
     //USBDEBUG("%.2x", c);
     n--;
   }
@@ -279,10 +280,11 @@ static void usb_packet_read_to_buffer(USBDriver *usbp, uint8_t ep,
  */
 static void usb_packet_read_to_queue(USBDriver *usbp, uint8_t ep,
                                      InputQueue *iqp, size_t n) {
+  (void) usbp;
   uint8_t *p = (uint8_t*)&get_endpoint_fifo_access8(ep);
   size_t nb = n;
   while (n > 0) {
-    uint8_t c = *iqp->q_wrptr++ = *p++;
+    *iqp->q_wrptr++ = *p++;
     //USBDEBUG("%.2x", c);
     if (iqp->q_wrptr >= iqp->q_top)
       iqp->q_wrptr = iqp->q_buffer;
@@ -391,6 +393,7 @@ static void serve_usb_ep_irq(USBDriver *usbp, usbep_t ep) {
     u->UOTGHS_DEVEPTICR[ep] = UOTGHS_DEVEPTICR_RXSTPIC;
 
     uint8_t *buf = usbp->setup;
+    (void) buf;
     USBDEBUG("S %.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x\r\n",
           buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
 
@@ -468,6 +471,7 @@ static void serve_usb_dma_irq(USBDriver *usbp, usbep_t ep) {
   UotghsDevdma *dma = &u->UOTGHS_DEVDMA[ep - DEVDMA_BASE];
   // Clear flags
   uint32_t status = dma->UOTGHS_DEVDMASTATUS;
+  (void) status;
 
   u->UOTGHS_DEVIDR = UOTGHS_DEVIDR_DMA_1 << (ep - 1);
 
@@ -875,7 +879,7 @@ void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep) {
   (void)ep;
 
   // Use DMA? rxsize > 0. Supported channel.
-  USBOutEndpointState *osp = usbp->epc[ep]->out_state;
+  //USBOutEndpointState *osp = usbp->epc[ep]->out_state;
 
   //USBDEBUG("PR %d>%d\r\n", ep, osp->rxsize);
 }

@@ -82,8 +82,9 @@ void serve_spi_irq(SPIDriver *spip) {
   }
 }
 
-void serve_spi_dma(uint8_t ch, void *state)
+void serve_spi_dma(uint8_t ch, const void *state)
 {
+  (void)ch;
   _spi_isr_code((SPIDriver*)state);
 }
 
@@ -227,10 +228,10 @@ void spi_lld_ignore(SPIDriver *spip, size_t n) {
   if (IS_USE_DMA(spip)) {
     dmac_prepare_receive_dummy(spip->config->dma_rx_ch, spip->dma_rx_per,
         serve_spi_dma, spip,
-        n, &spip->spi->SPI_RDR);
+        n, (void*)&spip->spi->SPI_RDR);
     dmac_prepare_send_dummy(spip->config->dma_tx_ch, spip->dma_tx_per,
         NULL, NULL,
-        n, 0xFF, &spip->spi->SPI_TDR);
+        n, 0xFF, (void*)&spip->spi->SPI_TDR);
     dmac_channel_start(spip->config->dma_rx_ch);
     dmac_channel_start(spip->config->dma_tx_ch);
     return;
@@ -265,10 +266,10 @@ void spi_lld_exchange(SPIDriver *spip, size_t n,
   if (IS_USE_DMA(spip)) {
     dmac_prepare_receive(spip->config->dma_rx_ch, spip->dma_rx_per,
         serve_spi_dma, spip,
-        n, rxbuf, &spip->spi->SPI_RDR);
+        n, rxbuf, (void*)&spip->spi->SPI_RDR);
     dmac_prepare_send(spip->config->dma_tx_ch, spip->dma_tx_per,
         NULL, NULL,
-        n, txbuf, &spip->spi->SPI_TDR);
+        n, txbuf, (void*)&spip->spi->SPI_TDR);
     dmac_channel_start(spip->config->dma_rx_ch);
     dmac_channel_start(spip->config->dma_tx_ch);
     return;
@@ -300,10 +301,10 @@ void spi_lld_send(SPIDriver *spip, size_t n, const void *txbuf) {
   if (IS_USE_DMA(spip)) {
     dmac_prepare_receive_dummy(spip->config->dma_rx_ch, spip->dma_rx_per,
         serve_spi_dma, spip,
-        n, &spip->spi->SPI_RDR);
+        n, (void*)&spip->spi->SPI_RDR);
     dmac_prepare_send(spip->config->dma_tx_ch, spip->dma_tx_per,
         NULL, NULL,
-        n, txbuf, &spip->spi->SPI_TDR);
+        n, txbuf, (void*)&spip->spi->SPI_TDR);
     dmac_channel_start(spip->config->dma_rx_ch);
     dmac_channel_start(spip->config->dma_tx_ch);
     return;
@@ -336,10 +337,10 @@ void spi_lld_receive(SPIDriver *spip, size_t n, void *rxbuf) {
   if (IS_USE_DMA(spip) && 0) {
     dmac_prepare_receive(spip->config->dma_rx_ch, spip->dma_rx_per,
         serve_spi_dma, spip,
-        n, rxbuf, &spip->spi->SPI_RDR);
+        n, rxbuf, (void*)&spip->spi->SPI_RDR);
     dmac_prepare_send_dummy(spip->config->dma_tx_ch, spip->dma_tx_per,
         NULL, NULL,
-        n, 0xFF, &spip->spi->SPI_TDR);
+        n, 0xFF, (void*)&spip->spi->SPI_TDR);
     dmac_channel_start(spip->config->dma_rx_ch);
     dmac_channel_start(spip->config->dma_tx_ch);
     return;
