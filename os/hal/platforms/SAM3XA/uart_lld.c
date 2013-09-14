@@ -155,14 +155,15 @@ static void usart_stop(UARTDriver *uartp) {
  * @param[in] uartp     pointer to the @p UARTDriver object
  */
 static void usart_start(UARTDriver *uartp, uint32_t irq_priority) {
+  uint8_t mode;
   Uart* u = uartp->reg.uart;
 
-  u->UART_CR = UART_CR_RXEN | UART_CR_TXEN | UART_CR_RSTSTA;
-  u->UART_BRGR = SystemCoreClock / 16 / uartp->config->speed;
-
   pmc_enable_peripheral_clock(uartp->peripheral_id);
+  u->UART_CR = UART_CR_RXEN | UART_CR_TXEN | UART_CR_RSTSTA;
 
-  uartp->reg.usart->US_MR = uartp->config->mr;
+  mode = uartp->config->mr & US_MR_USART_MODE_Msk;
+
+  u->UART_MR = uartp->config->mr;
   if (uartp->is_usart) {
     uartp->reg.usart->US_RTOR = uartp->config->rtor;
     uartp->reg.usart->US_TTGR = uartp->config->ttgr;
@@ -172,6 +173,14 @@ static void usart_start(UARTDriver *uartp, uint32_t irq_priority) {
   peripheral_pin_apply(&uartp->config->tx_pin);
   peripheral_pin_apply(&uartp->config->rx_pin);
 
+  if (mode == US_MR_USART_MODE_SPI_MASTER ||
+      mode == US_MR_USART_MODE_SPI_SLAVE)
+  {
+    u->UART_BRGR = SystemCoreClock / uartp->config->speed;
+  } else
+  {
+    u->UART_BRGR = SystemCoreClock / 16 / uartp->config->speed;
+  }
 
   // Enable interrupts for error conditions
   u->UART_IER = UART_IER_PARE | UART_IER_FRAME | UART_IER_OVRE;
