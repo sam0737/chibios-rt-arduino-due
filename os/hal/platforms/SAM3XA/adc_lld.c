@@ -106,11 +106,11 @@ void adc_lld_init(void) {
  * @notapi
  */
 void adc_lld_start(ADCDriver *adcp) {
-  uint32_t clock;
+  uint32_t frequency;
 
   // Enable clock and interrupt vector
   pmc_enable_peripheral_clock(ID_ADC);
-  nvicEnableVector(ADC_IRQn, CORTEX_PRIORITY_MASK(SAM3XA_ADC_IRQ_PRIORITY));
+  nvicEnableVector(ADC_IRQn, CORTEX_PRIORITY_MASK(SAM3XA_ADC_DEFAULT_IRQ_PRIORITY));
 
   if (adcp->state == ADC_STOP) {
     /* Enables the peripheral.*/
@@ -122,10 +122,10 @@ void adc_lld_start(ADCDriver *adcp) {
       dummy = ADC->ADC_CDR[i];
     }
 
-    clock = adcp->config->clock ? adcp->config->clock : 10*1000*1000;
+    frequency = adcp->config->frequency ? adcp->config->frequency : 10*1000*1000;
 
     ADC->ADC_MR =
-        ADC_MR_PRESCAL( ((SystemCoreClock / 2) + (clock - 1)) / clock - 1 ) |
+        ADC_MR_PRESCAL( ((SystemCoreClock / 2) + (frequency - 1)) / frequency - 1 ) |
         ADC_MR_STARTUP_SUT24 |
         ADC_MR_SLEEP_NORMAL |
         ADC_MR_LOWRES_BITS_12 |

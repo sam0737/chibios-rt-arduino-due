@@ -61,8 +61,8 @@
 /**
  * @brief   ADC interrupt priority level setting
  */
-#if !defined(SAM3XA_PWM_DEFAULT_IRQ_PRIORITY) || defined(__DOXYGEN__)
-#define SAM3XA_ADC_IRQ_PRIORITY             12
+#if !defined(SAM3XA_ADC_DEFAULT_IRQ_PRIORITY) || defined(__DOXYGEN__)
+#define SAM3XA_ADC_DEFAULT_IRQ_PRIORITY     12
 #endif
 /** @} */
 
@@ -157,11 +157,11 @@ typedef struct {
  */
 typedef struct {
   /**
-   * @brief ADC clock. 0 to left as default
+   * @brief ADC clock frequency. 0 to left as default
    * @note  Default is 10Mhz. max is 20Mhz.
    * Please refer to the datasheet for track and transfer requirement.
    */
-  uint32_t                  clock;
+  uint32_t                  frequency;
 
   /**
    * @brief Optionally use custom ADC sequence (ADC_MR_USEQ)
