@@ -241,7 +241,7 @@ void sd_lld_start(SerialDriver *sdp, const SerialConfig *config) {
     init(&SD1, SD1_PORT);
 #endif
 
-#if USE_WIN32_SERIAL1
+#if USE_WIN32_SERIAL2
   if (sdp == &SD2)
     init(&SD2, SD2_PORT);
 #endif
