@@ -35,7 +35,7 @@
 #include "chprintf.h"
 
 #define MAX_FILLER 11
-#define FLOAT_PRECISION 100000
+#define FLOAT_PRECISION 5
 
 static char *long_to_string_with_divisor(char *p,
                                          long num,
@@ -76,15 +76,17 @@ static char *ltoa(char *p, long num, unsigned radix) {
 }
 
 #if CHPRINTF_USE_FLOAT
-static char *ftoa(char *p, double num) {
+static char *ftoa(char *p, double num, int precision) {
   long l;
-  unsigned long precision = FLOAT_PRECISION;
+  unsigned long precision_digit = 1;
 
   l = num;
   p = long_to_string_with_divisor(p, l, 10, 0);
   *p++ = '.';
-  l = (num - l) * precision;
-  return long_to_string_with_divisor(p, l, 10, precision / 10);
+  for (; precision > 0; precision--)
+    precision_digit *= 10;
+  l = (num - l) * precision_digit;
+  return long_to_string_with_divisor(p, l, 10, precision_digit / 10);
 }
 #endif
 
@@ -142,6 +144,8 @@ void chprintf(BaseSequentialStream *chp, const char *fmt, ...) {
     }
     filler = ' ';
     if (*fmt == '.') {
+      filler = '0';
+    } else if (*fmt == '0') {
       fmt++;
       filler = '0';
     }
@@ -213,7 +217,9 @@ void chprintf(BaseSequentialStream *chp, const char *fmt, ...) {
         *p++ = '-';
         f = -f;
       }
-      p = ftoa(p, f);
+      if (precision == 0)
+        precision = FLOAT_PRECISION;
+      p = ftoa(p, f, precision);
       break;
 #endif
     case 'X':
