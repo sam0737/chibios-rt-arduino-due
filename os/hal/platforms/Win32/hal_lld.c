@@ -87,9 +87,6 @@ void ChkIntSources(void) {
   }
 #endif
 
-  /* Avoid CPU spinning */
-  Sleep(1);
-
   /* Interrupt Timer simulation (10ms interval).*/
   QueryPerformanceCounter(&n);
   if (n.QuadPart > nextcnt.QuadPart) {
@@ -107,6 +104,9 @@ void ChkIntSources(void) {
     if (chSchIsPreemptionRequired())
       chSchDoReschedule();
     dbg_check_unlock();
+  } else {
+    /* Avoid CPU spinning */
+    Sleep(1);
   }
 }
 
