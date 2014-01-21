@@ -35,7 +35,7 @@
 /**
  * @brief   Defines the support for realtime counters in the HAL.
  */
-#define HAL_IMPLEMENTS_COUNTERS FALSE
+#define HAL_IMPLEMENTS_COUNTERS TRUE
 
 /**
  * @brief   Platform name.
@@ -54,6 +54,11 @@
 /* Driver data structures and types.                                         */
 /*===========================================================================*/
 
+/**
+ * @brief   Type of the realtime free counter value.
+ */
+typedef uint64_t halrtcnt_t;
+
 /*===========================================================================*/
 /* External declarations.                                                    */
 /*===========================================================================*/
@@ -63,6 +68,8 @@ extern "C" {
 #endif
   void hal_lld_init(void);
   void ChkIntSources(void);
+  halrtcnt_t hal_lld_get_counter_value(void);
+  halrtcnt_t hal_lld_get_counter_frequency(void);
 #ifdef __cplusplus
 }
 #endif

@@ -110,4 +110,17 @@ void ChkIntSources(void) {
   }
 }
 
+halrtcnt_t hal_lld_get_counter_value(void) {
+  static LARGE_INTEGER cnt;
+  QueryPerformanceCounter(&cnt);
+  return (halrtcnt_t)cnt.QuadPart;
+}
+
+halrtcnt_t hal_lld_get_counter_frequency()
+{
+  static LARGE_INTEGER cnt;
+  QueryPerformanceFrequency(&cnt);
+  return (halrtcnt_t)cnt.QuadPart;
+}
+
 /** @} */
