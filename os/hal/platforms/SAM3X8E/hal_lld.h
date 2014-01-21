@@ -43,6 +43,11 @@
 /*===========================================================================*/
 
 /**
+ * @brief   Defines the support for realtime counters in the HAL.
+ */
+#define HAL_IMPLEMENTS_COUNTERS TRUE
+
+/**
  * @brief   Platform name.
  */
 #define PLATFORM_NAME   "ATMEL SAM3X8E"
@@ -64,6 +69,11 @@
  */
 extern uint32_t SystemCoreClock;
 
+/**
+ * @brief   Type of the realtime free counter value.
+ */
+typedef uint64_t halrtcnt_t;
+
 /*===========================================================================*/
 /* Driver macros.                                                            */
 /*===========================================================================*/
@@ -77,6 +87,8 @@ extern "C" {
 #endif
   void hal_lld_init(void);
   void sam3x8e_clock_init(void);
+  halrtcnt_t hal_lld_get_counter_value(void);
+  halrtcnt_t hal_lld_get_counter_frequency(void);
 #ifdef __cplusplus
 }
 #endif

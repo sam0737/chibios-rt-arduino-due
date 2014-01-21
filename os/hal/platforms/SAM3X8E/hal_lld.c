@@ -41,6 +41,10 @@
 #include "dmac.h"
 #endif
 
+#ifndef SAM3XA_SLOW_CLOCK_USE_CRYSTAL
+#define SAM3XA_SLOW_CLOCK_USE_CRYSTAL FALSE
+#endif
+
 /* Clock settings (12MHz crystal to 84MHz) */
 #ifndef SYS_BOARD_OSCOUNT
 #define SYS_BOARD_OSCOUNT   (CKGR_MOR_MOSCXTST(0x8))
@@ -121,6 +125,10 @@ static void SystemInit(void)
 	}
 
 	SystemCoreClock = SYS_BOARD_FINAL_FREQ;
+
+#if SAM3XA_SLOW_CLOCK_USE_CRYSTAL
+	SUPC->SUPC_CR = SUPC_CR_KEY(0xA5) | SUPC_CR_XTALSEL_CRYSTAL_SEL;
+#endif
 }
 
 /*===========================================================================*/
@@ -138,6 +146,8 @@ static void SystemInit(void)
  */
 void hal_lld_init(void) {
 	SysTick_Config(SystemCoreClock / CH_FREQUENCY);
+	/* Set slow clock frequency to 32768 */
+	RTT->RTT_MR = RTT_MR_RTPRES(1) | RTT_MR_RTTRST;
 #if SAM3XA_USB_USE_DMAC
 	dmac_lld_init();
 #endif
@@ -145,6 +155,20 @@ void hal_lld_init(void) {
 
 void sam3x8e_clock_init(void) {
 	SystemInit();
+}
+
+halrtcnt_t hal_lld_get_counter_value(void) {
+  chSysLock();
+  uint32_t tick1 = SysTick->VAL;
+  uint32_t time = chTimeNow();
+  uint32_t tick2 = SysTick->VAL;
+  chSysUnlock();
+  return (halrtcnt_t) (time + (tick1 > tick2 ? 1 : 0)) * (SystemCoreClock / CH_FREQUENCY) + tick1;
+}
+
+halrtcnt_t hal_lld_get_counter_frequency(void)
+{
+  return (halrtcnt_t) SystemCoreClock;
 }
 
 /** @} */
