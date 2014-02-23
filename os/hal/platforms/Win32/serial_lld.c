@@ -169,28 +169,36 @@ static bool_t outint(SerialDriver *sdp) {
      * Input.
      */
     chSysLockFromIsr();
-    n = sdRequestDataI(sdp);
-    chSysUnlockFromIsr();
-    if (n < 0)
-      return FALSE;
-    data[0] = (uint8_t)n;
-    n = send(sdp->com_data, data, sizeof(data), 0);
-    switch (n) {
-    case 0:
-      closesocket(sdp->com_data);
-      sdp->com_data = INVALID_SOCKET;
-      chSysLockFromIsr();
-      chnAddFlagsI(sdp, CHN_DISCONNECTED);
+    if (chOQIsEmptyI(&sdp->oqueue)) {
       chSysUnlockFromIsr();
       return FALSE;
-    case SOCKET_ERROR:
-      if (WSAGetLastError() == WSAEWOULDBLOCK)
-        return FALSE;
-      closesocket(sdp->com_data);
-      sdp->com_data = INVALID_SOCKET;
-      return FALSE;
     }
-    return TRUE;
+
+    while (1)
+    {
+      chSysLockFromIsr();
+      n = sdRequestDataI(sdp);
+      chSysUnlockFromIsr();
+      if (n < 0)
+        return TRUE;
+      data[0] = (uint8_t)n;
+      n = send(sdp->com_data, data, sizeof(data), 0);
+      switch (n) {
+      case 0:
+        closesocket(sdp->com_data);
+        sdp->com_data = INVALID_SOCKET;
+        chSysLockFromIsr();
+        chnAddFlagsI(sdp, CHN_DISCONNECTED);
+        chSysUnlockFromIsr();
+        return FALSE;
+      case SOCKET_ERROR:
+        if (WSAGetLastError() == WSAEWOULDBLOCK)
+          return FALSE;
+        closesocket(sdp->com_data);
+        sdp->com_data = INVALID_SOCKET;
+        return FALSE;
+      }
+    }
   }
   return FALSE;
 }
