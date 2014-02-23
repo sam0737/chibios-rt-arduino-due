@@ -72,19 +72,21 @@
  * @param[in] elp       pointer to the @p EventListener structure
  * @param[in] mask      the mask of event flags to be ORed to the thread when
  *                      the event source is broadcasted
+ * @param[in] flags_mask  the thread will only be waked for these flags
  *
  * @api
  */
-void chEvtRegisterMask(EventSource *esp, EventListener *elp, eventmask_t mask) {
+void chEvtRegisterMaskWithFlags(EventSource *esp, EventListener *elp, eventmask_t mask, flagsmask_t flags_mask) {
 
   chDbgCheck((esp != NULL) && (elp != NULL), "chEvtRegisterMask");
 
   chSysLock();
-  elp->el_next     = esp->es_next;
-  esp->es_next     = elp;
-  elp->el_listener = currp;
-  elp->el_mask     = mask;
-  elp->el_flags    = 0;
+  elp->el_next       = esp->es_next;
+  esp->es_next       = elp;
+  elp->el_listener   = currp;
+  elp->el_mask       = mask;
+  elp->el_flags      = 0;
+  elp->el_flags_mask = flags_mask;
   chSysUnlock();
 }
 
@@ -183,7 +185,9 @@ void chEvtBroadcastFlagsI(EventSource *esp, flagsmask_t flags) {
   elp = esp->es_next;
   while (elp != (EventListener *)esp) {
     elp->el_flags |= flags;
-    chEvtSignalI(elp->el_listener, elp->el_mask);
+    /* flags == 0 will always signal the event for compatibility */
+    if (flags == 0 || (elp->el_flags & elp->el_flags_mask))
+      chEvtSignalI(elp->el_listener, elp->el_mask);
     elp = elp->el_next;
   }
 }
@@ -269,7 +273,6 @@ void chEvtSignalI(Thread *tp, eventmask_t mask) {
  * @api
  */
 void chEvtBroadcastFlags(EventSource *esp, flagsmask_t flags) {
-
   chSysLock();
   chEvtBroadcastFlagsI(esp, flags);
   chSchRescheduleS();

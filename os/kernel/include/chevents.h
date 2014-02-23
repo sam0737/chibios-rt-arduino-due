@@ -49,7 +49,9 @@ struct EventListener {
                                                     by the thread to the Event
                                                     Source.                 */
   flagsmask_t           el_flags;       /**< @brief Flags added to the listener
-                                                    by the event source.*/
+                                                    by the event source.    */
+  flagsmask_t           el_flags_mask;  /**< @brief Flags that this listener
+                                                    interested in.          */
 };
 
 /**
@@ -92,6 +94,23 @@ typedef void (*evhandler_t)(eventid_t);
  * @brief   Returns an event mask from an event identifier.
  */
 #define EVENT_MASK(eid) ((eventmask_t)(1 << (eid)))
+
+/**
+ * @brief   Registers an Event Listener on an Event Source.
+ * @details Once a thread has registered as listener on an event source it
+ *          will be notified of all events broadcasted there.
+ * @note    Multiple Event Listeners can specify the same bits to be ORed to
+ *          different threads.
+ *
+ * @param[in] esp       pointer to the  @p EventSource structure
+ * @param[in] elp       pointer to the @p EventListener structure
+ * @param[in] mask      the mask of event flags to be ORed to the thread when
+ *                      the event source is broadcasted
+ *
+ * @api
+ */
+#define chEvtRegisterMask(esp, elp, mask) \
+		chEvtRegisterMaskWithFlags(esp, elp, mask, ((flagsmask_t)-1))
 
 /**
  * @name    Macro Functions
@@ -165,9 +184,10 @@ typedef void (*evhandler_t)(eventid_t);
 #ifdef __cplusplus
 extern "C" {
 #endif
-  void chEvtRegisterMask(EventSource *esp,
+  void chEvtRegisterMaskWithFlags(EventSource *esp,
                          EventListener *elp,
-                         eventmask_t mask);
+                         eventmask_t mask,
+                         flagsmask_t flags_mask);
   void chEvtUnregister(EventSource *esp, EventListener *elp);
   eventmask_t chEvtGetAndClearEvents(eventmask_t mask);
   eventmask_t chEvtAddEvents(eventmask_t mask);
