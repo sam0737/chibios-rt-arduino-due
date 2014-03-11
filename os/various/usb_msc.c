@@ -69,7 +69,7 @@ static const uint8_t scsi_inquiry_data[] = {
 /**
  * @brief   Generic buffer.
  */
-uint8_t buf[16];
+static uint8_t buf[16];
 
 /*===========================================================================*/
 /* MMC interface code.                                                       */
