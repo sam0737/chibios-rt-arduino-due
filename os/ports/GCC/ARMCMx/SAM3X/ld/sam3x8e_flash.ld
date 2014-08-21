@@ -32,8 +32,8 @@ OUTPUT_ARCH(arm)
 SEARCH_DIR(.)
 
 /* The stack size used by the application. NOTE: you might need to adjust  */
-__main_stack_size__ = DEFINED(__main_stack_size__) ? __main_stack_size__ : 0x1000 ;
-__process_stack_size__ = DEFINED(__process_stack_size__) ? __process_stack_size__ : 0x1000 ;
+__main_stack_size__ = DEFINED(__main_stack_size__) ? __main_stack_size__ : 0x0400 ;
+__process_stack_size__ = DEFINED(__process_stack_size__) ? __process_stack_size__ : 0x1C00 ;
 
 /* Memory Spaces Definitions */
 MEMORY
