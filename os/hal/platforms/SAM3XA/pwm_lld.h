@@ -42,7 +42,7 @@
 #define PWM_CHANNEL_POLARITY_LOW                0x00
 
 /**
- * @brief   Channel output begins with high level first (default)
+ * @brief   Channel output begins with high level first
  */
 #define PWM_CHANNEL_POLARITY_HIGH               0x10
 

@@ -118,8 +118,8 @@ PWMDriver PWMD7 = {
 #if SAM3XA_PWM_USE_CH7 || defined(__DOXYGEN__)
 PWMDriver PWMD8 = {
     .channel_id = 7,
-    pwm = Pwm,
-    pwm_ch = &(PWM->PWM_CH_NUM[7])
+    .pwm = PWM,
+    .pwm_ch = &(PWM->PWM_CH_NUM[7])
 };
 #endif
 
