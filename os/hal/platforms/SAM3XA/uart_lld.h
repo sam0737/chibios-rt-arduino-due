@@ -210,6 +210,12 @@ typedef struct {
    * @brief CTS pin config (Only for USART0, 1, 2)
    */
   PeripheralPinConfig       cts_pin;
+
+  /**
+   * @brief SCK pin config (Only for USART0, 1, 2)
+   */
+  PeripheralPinConfig       sck_pin;
+
   /**
    * @brief Bit rate.
    */

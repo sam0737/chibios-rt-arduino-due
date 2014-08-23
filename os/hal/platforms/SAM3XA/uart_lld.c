@@ -144,6 +144,7 @@ static void usart_stop(UARTDriver *uartp) {
   if (uartp->is_usart) {
     peripheral_pin_reset(&uartp->config->rts_pin);
     peripheral_pin_reset(&uartp->config->cts_pin);
+    peripheral_pin_reset(&uartp->config->sck_pin);
   }
 }
 
@@ -169,6 +170,7 @@ static void usart_start(UARTDriver *uartp, uint32_t irq_priority) {
     uartp->reg.usart->US_TTGR = uartp->config->ttgr;
     peripheral_pin_apply(&uartp->config->rts_pin);
     peripheral_pin_apply(&uartp->config->cts_pin);
+    peripheral_pin_apply(&uartp->config->sck_pin);
   }
   peripheral_pin_apply(&uartp->config->tx_pin);
   peripheral_pin_apply(&uartp->config->rx_pin);
