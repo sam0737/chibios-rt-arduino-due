@@ -334,7 +334,7 @@ void spi_lld_send(SPIDriver *spip, size_t n, const void *txbuf) {
 
 void spi_lld_receive(SPIDriver *spip, size_t n, void *rxbuf) {
 #if SAM3XA_USB_USE_DMAC
-  if (IS_USE_DMA(spip) && 0) {
+  if (IS_USE_DMA(spip)) {
     dmac_prepare_receive(spip->config->dma_rx_ch, spip->dma_rx_per,
         serve_spi_dma, spip,
         n, rxbuf, (void*)&spip->spi->SPI_RDR);
