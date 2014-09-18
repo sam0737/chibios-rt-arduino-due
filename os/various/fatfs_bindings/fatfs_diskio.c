@@ -108,14 +108,9 @@ DSTATUS disk_status (
 /*-----------------------------------------------------------------------*/
 /* Read Sector(s)                                                        */
 
-DRESULT disk_read (
-    BYTE drv,        /* Physical drive nmuber (0..) */
-    BYTE *buff,        /* Data buffer to store read data */
-    DWORD sector,    /* Sector address (LBA) */
-    BYTE count        /* Number of sectors to read (1..255) */
-)
+DRESULT disk_read (BYTE pdrv, BYTE* buff, DWORD sector, UINT count)
 {
-  switch (drv) {
+  switch (pdrv) {
 #if HAL_USE_MMC_SPI
   case MMC:
     if (blkGetDriverState(&MMCD1) != BLK_READY)
@@ -149,14 +144,9 @@ DRESULT disk_read (
 /* Write Sector(s)                                                       */
 
 #if _READONLY == 0
-DRESULT disk_write (
-    BYTE drv,            /* Physical drive nmuber (0..) */
-    const BYTE *buff,    /* Data to be written */
-    DWORD sector,        /* Sector address (LBA) */
-    BYTE count            /* Number of sectors to write (1..255) */
-)
+DRESULT disk_write (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count)
 {
-  switch (drv) {
+  switch (pdrv) {
 #if HAL_USE_MMC_SPI
   case MMC:
     if (blkGetDriverState(&MMCD1) != BLK_READY)

@@ -65,7 +65,7 @@ SPIDriver SPID1 = {
 /*===========================================================================*/
 
 void serve_spi_irq(SPIDriver *spip) {
-  uint8_t dummy;
+  uint8_t dummy __attribute__((__unused__));
   if (spip->rx_buf) {
     *spip->rx_buf++ = spip->spi->SPI_RDR;
   } else {

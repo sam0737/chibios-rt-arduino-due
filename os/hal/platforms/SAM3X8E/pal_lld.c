@@ -66,16 +66,10 @@ void _pal_lld_init(const PALConfig *config)
 {
 	(void)config;
 
-	// Enable PIO function
-	PIOA->PIO_PER = 0xffffffff;
 	// Enable direct write to ODSR
 	PIOA->PIO_OWER = 0xffffffff;
-
-	PIOB->PIO_PER = 0xffffffff;
 	PIOB->PIO_OWER = 0xffffffff;
-	PIOC->PIO_PER = 0xffffffff;
 	PIOC->PIO_OWER = 0xffffffff;
-	PIOD->PIO_PER = 0xffffffff;
 	PIOD->PIO_OWER = 0xffffffff;
 
   pmc_enable_peripheral_clock(ID_PIOA);
@@ -86,6 +80,9 @@ void _pal_lld_init(const PALConfig *config)
 
 void _pal_lld_setgroupmode(ioportid_t port, ioportmask_t mask, iomode_t mode)
 {
+  // Enable PIO function
+  (port)->PIO_PER = mask;
+
 	switch (mode)
 	{
 	case PAL_MODE_RESET:

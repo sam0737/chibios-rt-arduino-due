@@ -417,7 +417,7 @@ void gpt_lld_start_timer(GPTDriver *gptp, gptcnt_t interval) {
  * @notapi
  */
 void gpt_lld_stop_timer(GPTDriver *gptp) {
-  uint32_t status;
+  uint32_t status __attribute__((__unused__));
   // Disable clock
   gptp->channel->TC_CCR = TC_CCR_CLKDIS;
   // Stop and clear interrupt

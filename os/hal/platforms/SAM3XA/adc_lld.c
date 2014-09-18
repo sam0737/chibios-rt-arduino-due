@@ -115,7 +115,7 @@ void adc_lld_start(ADCDriver *adcp) {
   if (adcp->state == ADC_STOP) {
     /* Enables the peripheral.*/
     // Clear the ISR
-    uint16_t dummy;
+    uint16_t dummy __attribute__((__unused__));
     uint8_t i;
     dummy = ADC->ADC_LCDR;
     for (i = 0; i < 16; i++) {
