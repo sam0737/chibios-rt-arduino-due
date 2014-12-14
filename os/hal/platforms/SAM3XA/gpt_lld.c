@@ -43,6 +43,7 @@
 GPTDriver GPTD1 = {
     .peripheral_id = ID_TC0,
     .irq_id = TC0_IRQn,
+    .counter = TC0,
     .channel = &TC0->TC_CHANNEL[0]
 };
 #endif
@@ -55,6 +56,7 @@ GPTDriver GPTD1 = {
 GPTDriver GPTD2 = {
     .peripheral_id = ID_TC1,
     .irq_id = TC1_IRQn,
+    .counter = NULL,
     .channel = &TC0->TC_CHANNEL[1]
 };
 #endif
@@ -67,6 +69,7 @@ GPTDriver GPTD2 = {
 GPTDriver GPTD3 = {
     .peripheral_id = ID_TC2,
     .irq_id = TC2_IRQn,
+    .counter = NULL,
     .channel = &TC0->TC_CHANNEL[2]
 };
 #endif
@@ -79,6 +82,7 @@ GPTDriver GPTD3 = {
 GPTDriver GPTD4 = {
     .peripheral_id = ID_TC3,
     .irq_id = TC3_IRQn,
+    .counter = TC1,
     .channel = &TC1->TC_CHANNEL[0]
 };
 #endif
@@ -91,6 +95,7 @@ GPTDriver GPTD4 = {
 GPTDriver GPTD5 = {
     .peripheral_id = ID_TC4,
     .irq_id = TC4_IRQn,
+    .counter = NULL,
     .channel = &TC1->TC_CHANNEL[1]
 };
 #endif
@@ -103,6 +108,7 @@ GPTDriver GPTD5 = {
 GPTDriver GPTD6 = {
     .peripheral_id = ID_TC5,
     .irq_id = TC5_IRQn,
+    .counter = NULL,
     .channel = &TC1->TC_CHANNEL[2]
 };
 #endif
@@ -115,6 +121,7 @@ GPTDriver GPTD6 = {
 GPTDriver GPTD7 = {
     .peripheral_id = ID_TC6,
     .irq_id = TC6_IRQn,
+    .counter = TC2,
     .channel = &TC2->TC_CHANNEL[0]
 };
 #endif
@@ -127,6 +134,7 @@ GPTDriver GPTD7 = {
 GPTDriver GPTD8 = {
     .peripheral_id = ID_TC7,
     .irq_id = TC7_IRQn,
+    .counter = NULL,
     .channel = &TC2->TC_CHANNEL[1]
 };
 #endif
@@ -139,6 +147,7 @@ GPTDriver GPTD8 = {
 GPTDriver GPTD9 = {
     .peripheral_id = ID_TC8,
     .irq_id = TC8_IRQn,
+    .counter = NULL,
     .channel = &TC2->TC_CHANNEL[2]
 };
 #endif
@@ -315,7 +324,6 @@ void gpt_lld_init(void) {
 #endif
 
 #if SAM3XA_GPT_USE_TC4
-  GPTD1.channel = &TC1->TcChannel[1];
   gptObjectInit(&GPTD5);
 #endif
 
@@ -354,21 +362,48 @@ void gpt_lld_start(GPTDriver *gptp) {
       "GPTP irq_priority");
   nvicEnableVector(gptp->irq_id, CORTEX_PRIORITY_MASK(irq_priority));
 
-  if (gptp->config->frequency == SAM3XA_GPT_TIMER_CLOCK1_FREQ) {
-    clks = TC_CMR_TCCLKS_TIMER_CLOCK1;
-  } else if (gptp->config->frequency == SAM3XA_GPT_TIMER_CLOCK2_FREQ) {
-    clks = TC_CMR_TCCLKS_TIMER_CLOCK2;
-  } else if (gptp->config->frequency == SAM3XA_GPT_TIMER_CLOCK3_FREQ) {
-    clks = TC_CMR_TCCLKS_TIMER_CLOCK3;
-  } else if (gptp->config->frequency == SAM3XA_GPT_TIMER_CLOCK4_FREQ) {
-    clks = TC_CMR_TCCLKS_TIMER_CLOCK4;
-  } else {
-    chDbgAssert(0, "GPT invalid frequency selection", "invalid frequency");
+  if (gptp->config->bmr & TC_BMR_QDEN)
+  {
+    /* Quad decode mode */
+    clks = TC_CMR_TCCLKS_XC0;
+  } else
+  {
+    if (gptp->config->frequency == SAM3XA_GPT_TIMER_CLOCK1_FREQ) {
+      clks = TC_CMR_TCCLKS_TIMER_CLOCK1;
+    } else if (gptp->config->frequency == SAM3XA_GPT_TIMER_CLOCK2_FREQ) {
+      clks = TC_CMR_TCCLKS_TIMER_CLOCK2;
+    } else if (gptp->config->frequency == SAM3XA_GPT_TIMER_CLOCK3_FREQ) {
+      clks = TC_CMR_TCCLKS_TIMER_CLOCK3;
+    } else if (gptp->config->frequency == SAM3XA_GPT_TIMER_CLOCK4_FREQ) {
+      clks = TC_CMR_TCCLKS_TIMER_CLOCK4;
+    } else {
+      chDbgAssert(0, "GPT invalid frequency selection", "invalid frequency");
+    }
   }
 
-  /* Wave mode, Increment until RC */
-  gptp->channel->TC_CMR = clks | TC_CMR_WAVE | TC_CMR_WAVSEL_UP_RC;
-  gptp->channel->TC_CCR = TC_CCR_CLKDIS;
+  if (gptp->counter != NULL)
+  {
+    gptp->counter->TC_BMR = gptp->config->bmr;
+    gptp->counter->TC_QIER = gptp->config->qier;
+    gptp->counter->TC_FMR = gptp->config->fmr;
+  }
+
+  if (gptp->config->bmr & TC_BMR_QDEN)
+  {
+    /* Quad decode mode */
+    gptp->channel->TC_CMR = clks;
+    gptp->channel->TC_CCR = TC_CCR_CLKEN;
+    if (gptp->counter != NULL)
+    {
+      // Start the counter
+      gptp->counter->TC_BCR = TC_BCR_SYNC;
+    }
+  } else
+  {
+    /* Wave mode, Increment until RC */
+    gptp->channel->TC_CMR = clks | TC_CMR_WAVE | TC_CMR_WAVSEL_UP_RC;
+    gptp->channel->TC_CCR = TC_CCR_CLKDIS;
+  }
 }
 
 /**

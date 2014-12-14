@@ -193,8 +193,21 @@ typedef struct {
   /* End of the mandatory fields.*/
 
   /**
-     * @brief IRQ priority. If not set, a default will be assigned.
-     */
+   * @brief Block Mode Register.
+   */
+  uint32_t                  bmr;
+  /**
+   * @brief QDEC Interrupt Enable Register.
+   */
+  uint32_t                  qier;
+  /**
+   * @brief Fault Mode Register.
+   */
+  uint32_t                  fmr;
+
+  /**
+   * @brief IRQ priority. If not set, a default will be assigned.
+   */
   uint32_t                  irq_priority;
 } GPTConfig;
 
@@ -214,6 +227,11 @@ struct GPTDriver {
   GPT_DRIVER_EXT_FIELDS
 #endif
   /* End of the mandatory fields.*/
+  /**
+   * @brief Pointer to the Tc registers block.
+   */
+  Tc                        *counter;
+
   /**
    * @brief Pointer to the TcChannel registers block.
    */
